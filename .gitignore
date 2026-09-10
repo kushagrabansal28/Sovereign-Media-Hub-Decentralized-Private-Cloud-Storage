@@ -1,0 +1,25 @@
+# Node.js
+node_modules/
+dist/
+npm-debug.log*
+
+# Go / Backend
+backend/sovereign-media-hub
+backend/sovereign-media-hub.exe
+backend/data/
+*.db
+*.db-shm
+*.db-wal
+
+# Build artifacts
+*.exe
+*.o
+*.so
+
+# Environment Variables
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db

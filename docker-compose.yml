@@ -1,0 +1,40 @@
+services:
+  backend:
+    build: ./backend
+    container_name: sovereign_backend
+    restart: unless-stopped
+    volumes:
+      - blob-data:/app/data
+    environment:
+      - PORT=8080
+      - BASE_URL=${BASE_URL:-http://localhost:8080}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-104857600}
+    ports:
+      - "8080:8080" # Optional, if you want to test without caddy
+
+  frontend:
+    build: ./frontend
+    container_name: sovereign_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: sovereign_proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  blob-data:
+  caddy_data:
+  caddy_config:
