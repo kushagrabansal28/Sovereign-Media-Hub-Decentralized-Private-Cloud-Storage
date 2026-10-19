@@ -51,7 +51,7 @@ Point at the **How it works** column on the right.
 ## 3. Connect
 
 1. Storage server: leave `http://localhost:8787`, click **Test**. It shows "Reachable · a few ms · v2.0.0".
-2. Relay: `ws://localhost:7777` is already listed and shows "Connected". Say: "These are measured, not decorative. If I stop one, the page will say so."
+2. Relay: if the list is empty ("No relays are configured"), type `ws://localhost:7777` into **Add a relay** and click **Add**. It shows "Connected". Say: "These are measured, not decorative. If I stop one, the page will say so."
 3. Click **Open library**. The empty library explains what to do next.
 
 ## 4. Upload (the main part)
