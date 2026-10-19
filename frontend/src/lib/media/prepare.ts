@@ -79,9 +79,19 @@ function prepareVideo(file: File): Promise<PreparedMedia> {
       const { videoWidth: w, videoHeight: h, duration } = video
       const seconds = Number.isFinite(duration) ? duration : undefined
       try {
-        const bitmap = await createImageBitmap(video)
-        const out = await render(bitmap, w, h)
-        bitmap.close()
+        if (!w || !h) throw new Error('The video has no decoded frame')
+        let out: Awaited<ReturnType<typeof render>>
+        try {
+          const bitmap = await createImageBitmap(video)
+          try {
+            out = await render(bitmap, w, h)
+          } finally {
+            bitmap.close()
+          }
+        } catch {
+          // Some browsers refuse createImageBitmap on a video but can still draw it.
+          out = await render(video, w, h)
+        }
         resolve({ width: w, height: h, durationSeconds: seconds, ...out })
       } catch {
         resolve({
@@ -105,7 +115,7 @@ function prepareVideo(file: File): Promise<PreparedMedia> {
   })
 }
 
-type Source = ImageBitmap
+type Source = ImageBitmap | HTMLVideoElement
 
 async function render(bitmap: Source, width: number, height: number) {
   const scale = Math.min(1, THUMB_MAX_SIDE / Math.max(width, height))

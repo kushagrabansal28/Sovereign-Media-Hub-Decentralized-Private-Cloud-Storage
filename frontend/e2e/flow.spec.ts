@@ -56,10 +56,11 @@ test('first run → upload → gallery → viewer', async () => {
   // Metadata reached the relay as kind 1063 events, without media bytes.
   const events = [...stack.relay.events.values()].filter((e) => e.kind === 1063)
   expect(events).toHaveLength(7)
-  for (const e of events) {
-    expect(e.tags.some((t) => t[0] === 'thumb')).toBe(true)
-    expect(JSON.stringify(e).length).toBeLessThan(2000)
-  }
+  const withoutThumb = events
+    .filter((e) => !e.tags.some((t) => t[0] === 'thumb'))
+    .map((e) => e.tags.find((t) => t[0] === 'm')?.[1] ?? 'unknown type')
+  expect(withoutThumb, `items without a thumbnail. ${await panel.innerText()}`).toEqual([])
+  for (const e of events) expect(JSON.stringify(e).length).toBeLessThan(2000)
 
   // Gallery shows real thumbnails (decoded, non-zero size) and a video badge.
   const tiles = page.locator('.tile__main')
