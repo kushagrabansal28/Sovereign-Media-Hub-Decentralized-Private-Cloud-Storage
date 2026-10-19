@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AlertCircle, Check, ChevronDown, ChevronUp, Copy, RotateCw, X } from 'lucide-react'
+import { AlertCircle, Check, ChevronDown, ChevronUp, Copy, Film, RotateCw, X } from 'lucide-react'
 import { uploads } from '../services'
 import { formatBytes } from '../lib/format'
 import { useUploads, type UploadItem } from '../stores/uploads'
@@ -58,6 +58,21 @@ export function describeUpload(u: UploadItem): {
     default:
       return { text: 'Checking file', tone: 'busy' }
   }
+}
+
+function FilePreview({ file }: { file: File }) {
+  const [url] = useState(() => (file.type.startsWith('image/') ? URL.createObjectURL(file) : null))
+  useEffect(
+    () => () => {
+      if (url) URL.revokeObjectURL(url)
+    },
+    [url],
+  )
+  return (
+    <span className="uploads__preview" aria-hidden>
+      {url ? <img src={url} alt="" /> : <Film className="icon icon--sm" />}
+    </span>
+  )
 }
 
 export function UploadPanel() {
@@ -133,6 +148,7 @@ export function UploadPanel() {
                   )}
                   {pending && <span className="spinner" />}
                 </span>
+                <FilePreview file={u.file} />
                 <div className="uploads__main">
                   <div className="uploads__name" title={u.file.name}>
                     {u.file.name}

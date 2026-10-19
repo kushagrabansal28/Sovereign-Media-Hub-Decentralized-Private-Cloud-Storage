@@ -302,6 +302,12 @@ const Tile = memo(function Tile({
             {item.durationSeconds ? formatDuration(item.durationSeconds) : 'Video'}
           </span>
         )}
+        {width >= 150 && (
+          <span className="tile__caption" aria-hidden="true">
+            {date}
+            {item.size ? ` · ${formatBytes(item.size)}` : ''}
+          </span>
+        )}
       </button>
       <button
         type="button"

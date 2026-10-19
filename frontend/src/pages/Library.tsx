@@ -289,6 +289,11 @@ export default function Library() {
             options={SORT_OPTIONS}
             onChange={(v) => update({ sort: v })}
           />
+          <span className="toolbar__meta" aria-live="polite">
+            {visible.length === state.items.length
+              ? `${state.items.length.toLocaleString()} ${state.items.length === 1 ? 'item' : 'items'}`
+              : `${visible.length.toLocaleString()} of ${state.items.length.toLocaleString()}`}
+          </span>
           <span className="toolbar__spacer" />
           <Button
             className="toolbar__select"

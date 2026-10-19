@@ -49,7 +49,7 @@ export default function Welcome() {
       <header className="welcome__top">
         <Wordmark full />
       </header>
-      <main id="main" className="welcome__main">
+      <main id="main" className={`welcome__main${step === 'choose' ? ' welcome__main--wide' : ''}`}>
         {step === 'choose' && (
           <Choose
             onCreate={() => {
@@ -113,71 +113,109 @@ function Choose({
   const hasExtension = identity.hasExtension()
 
   return (
-    <div className="stack stack--lg">
-      <div className="stack">
-        <h1 className="display">Your library. Your server.</h1>
-        <p className="secondary">
-          Photos and videos are stored on a server you run. Relays keep small metadata records, not
-          the files. You sign in with a key you hold, so there is no password to reset or leak.
+    <div className="welcome-grid">
+      <div className="stack stack--lg">
+        <div className="stack">
+          <h1 className="display">Your library. Your server.</h1>
+          <p className="secondary">
+            Photos and videos are stored on a server you run. Relays keep small metadata records,
+            not the files. You sign in with a key you hold, so there is no password to reset or
+            leak.
+          </p>
+        </div>
+
+        <ul className="choices">
+          <li>
+            <button className="choice" onClick={onCreate}>
+              <KeyRound className="icon icon--lg" />
+              <span className="choice__text">
+                <span className="choice__title">Create a new identity</span>
+                <span className="choice__desc">Generates a Nostr key on this device.</span>
+              </span>
+              <ChevronRight className="icon muted" />
+            </button>
+          </li>
+          <li>
+            <button className="choice" onClick={onImport}>
+              <ArchiveRestore className="icon icon--lg" />
+              <span className="choice__text">
+                <span className="choice__title">Use an existing key</span>
+                <span className="choice__desc">
+                  Paste an nsec, a hex key, or an encrypted backup.
+                </span>
+              </span>
+              <ChevronRight className="icon muted" />
+            </button>
+          </li>
+          <li>
+            <button
+              className="choice"
+              disabled={!hasExtension || busy}
+              onClick={async () => {
+                setBusy(true)
+                try {
+                  await identity.useExtension()
+                  onExtension()
+                } catch (e) {
+                  notify(e instanceof Error ? e.message : 'The extension did not respond.', 'error')
+                } finally {
+                  setBusy(false)
+                }
+              }}
+            >
+              <Puzzle className="icon icon--lg" />
+              <span className="choice__text">
+                <span className="choice__title">Use a browser extension</span>
+                <span className="choice__desc">
+                  {hasExtension
+                    ? 'The extension holds the key and signs for this site (NIP-07).'
+                    : 'No NIP-07 extension was detected in this browser.'}
+                </span>
+              </span>
+              <ChevronRight className="icon muted" />
+            </button>
+          </li>
+        </ul>
+
+        <p className="field__hint">
+          The private key is never sent to the storage server or to relays.
         </p>
       </div>
-
-      <ul className="choices">
-        <li>
-          <button className="choice" onClick={onCreate}>
-            <KeyRound className="icon icon--lg" />
-            <span className="choice__text">
-              <span className="choice__title">Create a new identity</span>
-              <span className="choice__desc">Generates a Nostr key on this device.</span>
+      <aside className="how" aria-label="How it works">
+        <h2 className="how__title">How it works</h2>
+        <ol className="how__list">
+          <li>
+            <span className="how__n" aria-hidden>
+              01
             </span>
-            <ChevronRight className="icon muted" />
-          </button>
-        </li>
-        <li>
-          <button className="choice" onClick={onImport}>
-            <ArchiveRestore className="icon icon--lg" />
-            <span className="choice__text">
-              <span className="choice__title">Use an existing key</span>
-              <span className="choice__desc">
-                Paste an nsec, a hex key, or an encrypted backup.
-              </span>
+            <div>
+              <strong>Your key signs every request.</strong>
+              <p>
+                It is created on this device. The server checks signatures and never receives the
+                key.
+              </p>
+            </div>
+          </li>
+          <li>
+            <span className="how__n" aria-hidden>
+              02
             </span>
-            <ChevronRight className="icon muted" />
-          </button>
-        </li>
-        <li>
-          <button
-            className="choice"
-            disabled={!hasExtension || busy}
-            onClick={async () => {
-              setBusy(true)
-              try {
-                await identity.useExtension()
-                onExtension()
-              } catch (e) {
-                notify(e instanceof Error ? e.message : 'The extension did not respond.', 'error')
-              } finally {
-                setBusy(false)
-              }
-            }}
-          >
-            <Puzzle className="icon icon--lg" />
-            <span className="choice__text">
-              <span className="choice__title">Use a browser extension</span>
-              <span className="choice__desc">
-                {hasExtension
-                  ? 'The extension holds the key and signs for this site (NIP-07).'
-                  : 'No NIP-07 extension was detected in this browser.'}
-              </span>
+            <div>
+              <strong>Files go to your server.</strong>
+              <p>Each file is stored under its SHA-256, so identical files are kept once.</p>
+            </div>
+          </li>
+          <li>
+            <span className="how__n" aria-hidden>
+              03
             </span>
-            <ChevronRight className="icon muted" />
-          </button>
-        </li>
-      </ul>
-
-      <p className="field__hint">
-        The private key is never sent to the storage server or to relays.
-      </p>
+            <div>
+              <strong>Relays keep the index.</strong>
+              <p>Small signed records: hash, size, preview address. No file contents.</p>
+            </div>
+          </li>
+        </ol>
+      </aside>
     </div>
   )
 }

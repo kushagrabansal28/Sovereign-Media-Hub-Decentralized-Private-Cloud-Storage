@@ -101,10 +101,17 @@ test.afterAll(async () => {
 test('first load of a 3 000 item library', async () => {
   const requests: string[] = []
   page.on('request', (r) => requests.push(r.url()))
-  page.on('console', (m) => m.type() === 'error' && process.stdout.write(`[console] ${m.text()}
-`))
-  page.on('pageerror', (e) => process.stdout.write(`[pageerror] ${e.message}
-`))
+  page.on(
+    'console',
+    (m) =>
+      m.type() === 'error' &&
+      process.stdout.write(`[console] ${m.text()}
+`),
+  )
+  page.on('pageerror', (e) =>
+    process.stdout.write(`[pageerror] ${e.message}
+`),
+  )
 
   await page.goto('/')
   await page.getByRole('button', { name: /Use an existing key/ }).click()

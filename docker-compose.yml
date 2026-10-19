@@ -33,7 +33,7 @@ services:
       server:
         condition: service_healthy
     environment:
-      SITE_ADDRESS: ${SITE_ADDRESS::80}
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost}
       DEFAULT_RELAYS: ${DEFAULT_RELAYS:-[]}
     ports:

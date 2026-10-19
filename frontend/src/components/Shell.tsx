@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { Images, Lock, Settings as SettingsIcon, UploadCloud } from 'lucide-react'
+import { Images, Keyboard, Lock, Settings as SettingsIcon, UploadCloud } from 'lucide-react'
 import { library, server, uploads, useRelayStatuses } from '../services'
 import { npubOf } from '../lib/nostr/keys'
 import { shorten } from '../lib/format'
@@ -9,7 +9,7 @@ import { identity, useIdentity } from '../stores/identity'
 import { useLibraryState } from '../stores/library'
 import { useSettings } from '../stores/settings'
 import { Wordmark } from './Logo'
-import { Toasts } from './ui'
+import { Button, Dialog, IconButton, Toasts } from './ui'
 import { UploadPanel } from './UploadPanel'
 
 type Tone = 'ok' | 'warn' | 'bad' | 'busy'
@@ -44,6 +44,26 @@ export function Shell() {
   const id = useIdentity()
   const summary = useConnectionSummary()
   const location = useLocation()
+  const [help, setHelp] = useState(false)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement
+      if (t.closest('input, textarea, select, [contenteditable], dialog, [role="dialog"]')) return
+      if (e.key === '?') {
+        e.preventDefault()
+        setHelp(true)
+      } else if (e.key === '/') {
+        const search = document.querySelector<HTMLInputElement>('input[type="search"]')
+        if (search) {
+          e.preventDefault()
+          search.focus()
+        }
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
   if (id.phase !== 'unlocked') return null
   const npub = npubOf(id.pubkey)
 
@@ -117,6 +137,9 @@ export function Shell() {
             <span className="mono nav__npub" title={npub}>
               {shorten(npub, 9, 4)}
             </span>
+            <IconButton label="Keyboard shortcuts (?)" size="sm" onClick={() => setHelp(true)}>
+              <Keyboard className="icon icon--sm" />
+            </IconButton>
             {id.source === 'local' && !id.ephemeral && (
               <button
                 type="button"
@@ -136,6 +159,7 @@ export function Shell() {
         <Outlet />
       </main>
 
+      <ShortcutsDialog open={help} onClose={() => setHelp(false)} />
       <UploadPanel />
       <DropOverlay />
       <Toasts />
@@ -189,5 +213,39 @@ function DropOverlay() {
       <UploadCloud className="icon icon--lg" />
       <p>Drop to upload</p>
     </div>
+  )
+}
+
+const SHORTCUTS: [string, string][] = [
+  ['/', 'Search the library'],
+  ['Arrow keys', 'Move between items'],
+  ['Enter', 'Open the focused item'],
+  ['Shift + click', 'Select a range'],
+  ['← →', 'Previous or next item in the viewer'],
+  ['i', 'Show or hide details in the viewer'],
+  ['+  −  0', 'Zoom in, zoom out, fit to screen'],
+  ['Esc', 'Close the viewer or a dialog'],
+  ['?', 'Show this list'],
+]
+
+function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <Dialog
+      open={open}
+      title="Keyboard shortcuts"
+      onClose={onClose}
+      footer={<Button onClick={onClose}>Close</Button>}
+    >
+      <dl className="kv">
+        {SHORTCUTS.map(([keys, what]) => (
+          <div key={keys} style={{ display: 'contents' }}>
+            <dt>
+              <kbd>{keys}</kbd>
+            </dt>
+            <dd>{what}</dd>
+          </div>
+        ))}
+      </dl>
+    </Dialog>
   )
 }
