@@ -23,3 +23,11 @@ backend/data/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Local run state
+.run/
+
+# Test and run output
+frontend/test-results/
+frontend/playwright-report/
+reports/.build/

@@ -1,0 +1,19 @@
+metric,detail,value,unit
+publish_ack_latency,median over 200 sequential events,1.8,ms
+publish_ack_latency,p95,2.32,ms
+publish_failures,of 200,0,count
+query_all_events,"100 events, 500 per page, cold (every event verified)",151.74,ms
+query_events_returned,100 events,100,count
+query_all_events,"100 events, 500 per page, warm (all cached)",2.63,ms
+query_all_events,"1000 events, 500 per page, cold (every event verified)",1450.95,ms
+query_events_returned,1000 events,1000,count
+query_all_events,"1000 events, 500 per page, warm (all cached)",13.5,ms
+query_all_events,"5000 events, 500 per page, cold (every event verified)",7189.8,ms
+query_events_returned,5000 events,5000,count
+query_all_events,"5000 events, 500 per page, warm (all cached)",81.21,ms
+drop_detection,median of 5,15.28,ms
+reconnect_after_drop,median of 5 (backoff 0.5–1 s first retry),679.36,ms
+reconnect_after_drop,max of 5,968.46,ms
+publish_when_relay_down,outcome=unreachable,2.06,ms
+query_when_relay_down,skipped=1,0.04,ms
+publish_when_relay_silent,outcome=timeout (timeout 6 s),4409.37,ms

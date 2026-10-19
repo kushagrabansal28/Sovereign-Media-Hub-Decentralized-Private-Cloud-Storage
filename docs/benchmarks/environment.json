@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-19T18:51:33.597Z",
+  "os": "Windows_NT 10.0.26200 x64",
+  "cpu": "Intel(R) Core(TM) Ultra 9 275HX",
+  "logicalCores": 24,
+  "totalMemoryMB": 15748,
+  "node": "v24.19.0",
+  "go": "go version go1.27.0 windows/amd64",
+  "note": "Client and server run on the same machine; network latency is loopback only."
+}

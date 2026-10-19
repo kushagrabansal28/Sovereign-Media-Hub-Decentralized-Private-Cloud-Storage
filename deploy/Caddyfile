@@ -1,0 +1,51 @@
+# Serves the web app and proxies the storage API from one origin.
+#
+#   SITE_ADDRESS   ":80" for plain HTTP (local use), or a domain name such as
+#                  "media.example.org" for automatic HTTPS. HTTPS needs ports 80
+#                  and 443 reachable from the internet and a DNS record that
+#                  points at this host.
+#   PUBLIC_URL     The address users type, e.g. "https://media.example.org".
+#   DEFAULT_RELAYS JSON array of relay URLs offered on first run.
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	# The storage API. Blobs are addressed by 64 hex characters plus an optional extension.
+	@blossom {
+		path /upload /list/* /health /info
+	}
+	@blob {
+		path_regexp blob ^/[0-9a-f]{64}(\.[a-z0-9]{1,8})?$
+	}
+	handle @blossom {
+		reverse_proxy server:8787
+	}
+	handle @blob {
+		reverse_proxy server:8787
+	}
+
+	# Deployment defaults read by the app on first run (see frontend/src/stores/settings.ts).
+	handle /config.json {
+		header Content-Type application/json
+		header Cache-Control "no-store"
+		respond `{"blossomUrl":"{$PUBLIC_URL:http://localhost}","relays":{$DEFAULT_RELAYS:[]}}` 200
+	}
+
+	handle {
+		root * /srv
+		header {
+			Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http: https:; media-src 'self' blob: http: https:; connect-src 'self' http: https: ws: wss:; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+			X-Content-Type-Options nosniff
+			Referrer-Policy no-referrer
+			Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		}
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

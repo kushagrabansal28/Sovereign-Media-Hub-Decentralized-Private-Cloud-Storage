@@ -1,40 +1,52 @@
 services:
-  backend:
+  server:
     build: ./backend
-    container_name: sovereign_backend
     restart: unless-stopped
-    volumes:
-      - blob-data:/app/data
     environment:
-      - PORT=8080
-      - BASE_URL=${BASE_URL:-http://localhost:8080}
-      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-104857600}
-    ports:
-      - "8080:8080" # Optional, if you want to test without caddy
+      PORT: "8787"
+      DATA_DIR: /data
+      BASE_URL: ${PUBLIC_URL:-http://localhost}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-104857600}
+      ALLOWED_PUBKEYS: ${ALLOWED_PUBKEYS:-}
+      TRUST_PROXY: "true"
+    volumes:
+      - media:/data
+    # Only the proxy can reach the server; nothing is published to the host.
+    expose:
+      - "8787"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "server", "-healthcheck"]
+      interval: 15s
+      timeout: 4s
+      retries: 3
+      start_period: 5s
 
-  frontend:
-    build: ./frontend
-    container_name: sovereign_frontend
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
     restart: unless-stopped
     depends_on:
-      - backend
-
-  caddy:
-    image: caddy:2-alpine
-    container_name: sovereign_proxy
-    restart: unless-stopped
+      server:
+        condition: service_healthy
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS::80}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost}
+      DEFAULT_RELAYS: ${DEFAULT_RELAYS:-[]}
     ports:
-      - "80:80"
-      - "443:443"
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
-    depends_on:
-      - backend
-      - frontend
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: ["no-new-privileges:true"]
 
 volumes:
-  blob-data:
+  media:
   caddy_data:
   caddy_config:

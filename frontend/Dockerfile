@@ -1,25 +1,12 @@
-FROM node:20-alpine AS builder
-
+# Build context is the repository root (see docker-compose.yml).
+FROM node:22-alpine AS build
 WORKDIR /app
-COPY package*.json ./
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
-
-COPY . .
+COPY frontend/ ./
 RUN npm run build
 
-FROM nginx:alpine
-# Copy built assets to Nginx
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Custom nginx config to route react router paths to index.html
-RUN echo 'server { \
-    listen 80; \
-    location / { \
-        root   /usr/share/nginx/html; \
-        index  index.html index.htm; \
-        try_files $uri $uri/ /index.html; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+FROM caddy:2.8-alpine
+COPY deploy/Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /app/dist /srv
+EXPOSE 80 443
