@@ -63,7 +63,7 @@ const meta = {
   ],
   guide: "Dr. Sudha M, Professor",
   date: process.env.REPORT_DATE ?? new Date().toLocaleDateString("en-GB"),
-  repo: "https://github.com/GyroBullet/sovereign-media-hub",
+  repo: "https://github.com/kushagrabansal28/Sovereign-Media-Hub-Decentralized-Private-Cloud-Storage",
   header: "BACSE203 P – Final Review Report",
 };
 

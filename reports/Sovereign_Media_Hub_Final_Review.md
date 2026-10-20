@@ -38,7 +38,7 @@ The repository at the start of term contained a React 19 client and a Go storage
 | Adwit Agarwal | 25BYB0116 | Documentation |
 | Nilay Sengupta | 25BYB0255 | Documentation |
 
-Guide: Dr. Sudha M, Professor. Repository: <https://github.com/GyroBullet/sovereign-media-hub>.
+Guide: Dr. Sudha M, Professor. Repository: <https://github.com/kushagrabansal28/Sovereign-Media-Hub-Decentralized-Private-Cloud-Storage>. The prototype that was audited at the start of term is in the earlier repository GyroBullet/sovereign-media-hub.
 
 # 3. Objectives and requirements
 
