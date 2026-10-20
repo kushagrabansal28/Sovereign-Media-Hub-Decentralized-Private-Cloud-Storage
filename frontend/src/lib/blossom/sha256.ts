@@ -30,8 +30,14 @@ export async function sha256Stream(
   return bytesToHex(hasher.digest())
 }
 
-/** Hashes a blob that is small enough to read into memory. */
+/**
+ * Hashes a blob that is small enough to read into memory. `crypto.subtle` only exists in secure
+ * contexts (HTTPS or localhost), so on plain HTTP over a LAN this falls back to the same
+ * pure-JS digest the streaming path uses.
+ */
 export async function sha256Native(blob: Blob): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())
+  const subtle = globalThis.crypto?.subtle
+  if (!subtle) return sha256Stream(blob)
+  const digest = await subtle.digest('SHA-256', await blob.arrayBuffer())
   return bytesToHex(new Uint8Array(digest))
 }

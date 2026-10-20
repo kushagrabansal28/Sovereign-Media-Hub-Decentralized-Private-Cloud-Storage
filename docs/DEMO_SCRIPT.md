@@ -132,7 +132,7 @@ The two hashes are identical. Say: "The server named the file by the hash of wha
 
 | Claim | Where |
 | --- | --- |
-| Tests | `cd backend; go test ./...` (42 tests), `cd frontend; npm test` (142 tests), `npx playwright test` (22 browser scenarios) |
+| Tests | `cd backend; go test ./...` (42 tests), `cd frontend; npm test` (145 tests), `npx playwright test` (22 browser scenarios) |
 | Measurements | `docs/BENCHMARK_RESULTS.md`, charts in `docs/benchmarks/charts` |
 | Screenshots | `docs/screenshots` |
 | Prototype problems | `docs/REPOSITORY_AUDIT.md` |

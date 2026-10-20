@@ -5,8 +5,8 @@ Sovereign Media Hub has three parts. The names come from the project paper.
 | Part | Role | Implementation |
 | --- | --- | --- |
 | Client | Holds the identity, signs, hashes, uploads, queries, renders | `frontend/`: React 19, TypeScript, Vite |
-| Brains | Stores and distributes small metadata events | Any Nostr relay; `frontend/tools/dev-relay` for development |
-| Brawn | Stores file bytes under their SHA-256 | `backend/`: Go, SQLite, Blossom API |
+| Nostr relays (the "brains") | Stores and distributes small metadata events | Any Nostr relay; `frontend/tools/dev-relay` for development |
+| Blossom storage server (the "brawn") | Stores file bytes under their SHA-256 | `backend/`: Go, SQLite, Blossom API |
 
 ```
             signs locally                 kind 1063 / kind 5 events

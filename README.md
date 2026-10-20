@@ -16,8 +16,8 @@ Guide: Dr. Sudha M, Professor.
 ## How it fits together
 
 * **Client** (`frontend/`): React and TypeScript. Holds the key, hashes and signs locally, uploads, queries relays, renders the library.
-* **Brains** (Nostr relays): store NIP-94 file-metadata events and NIP-09 deletions.
-* **Brawn** (`backend/`): Go server implementing Blossom (BUD-01, 02, 06, 11, 12) over SQLite and a sharded blob directory.
+* **Nostr relays** ("brains"): store NIP-94 file-metadata events and NIP-09 deletions.
+* **Blossom storage server** ("brawn", `backend/`): Go server implementing Blossom (BUD-01, 02, 06, 11, 12) over SQLite and a sharded blob directory.
 
 Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
