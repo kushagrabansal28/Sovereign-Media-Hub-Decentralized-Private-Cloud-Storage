@@ -249,10 +249,18 @@
     padding: 0;
   }
   .wordmark__text,
-  .nav__label,
   .nav__npub,
   .nav__status dt {
     display: none;
+  }
+  /* Hidden visually, still the link's name for screen readers. */
+  .nav__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .nav__link {
     justify-content: center;

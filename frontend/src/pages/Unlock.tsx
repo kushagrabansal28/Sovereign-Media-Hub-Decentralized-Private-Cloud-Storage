@@ -1,14 +1,17 @@
 import { useState } from 'react'
+import { Avatar } from '../components/Avatar'
 import { Wordmark } from '../components/Logo'
 import { Button, ConfirmDialog, Field } from '../components/ui'
 import { KeyError, npubOf } from '../lib/nostr/keys'
 import { shorten } from '../lib/format'
 import { identity, useIdentity } from '../stores/identity'
+import { profiles, useProfile } from '../stores/profile'
 
 const paint = () => new Promise((r) => setTimeout(r, 30))
 
 export default function Unlock() {
   const id = useIdentity()
+  const profile = useProfile(id.phase === 'locked' ? id.pubkey : undefined)
   const [pass, setPass] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -31,7 +34,7 @@ export default function Unlock() {
   return (
     <div className="welcome">
       <header className="welcome__top">
-        <Wordmark full />
+        <Wordmark full draw />
       </header>
       <main id="main" className="welcome__main">
         <form className="stack stack--lg" onSubmit={submit}>
@@ -43,6 +46,15 @@ export default function Unlock() {
             readOnly
             hidden
           />
+          {profile && (
+            <div className="who">
+              <Avatar name={profile.name} picture={profile.picture} size={56} />
+              <div className="who__text">
+                <span className="who__hello">Welcome back</span>
+                <strong className="who__name">{profile.name}</strong>
+              </div>
+            </div>
+          )}
           <div className="stack">
             <h1 className="title">Unlock your identity</h1>
             <p className="secondary">
@@ -82,6 +94,7 @@ export default function Unlock() {
           onCancel={() => setConfirmForget(false)}
           onConfirm={() => {
             setConfirmForget(false)
+            profiles.remove(id.pubkey)
             identity.forget()
           }}
         >

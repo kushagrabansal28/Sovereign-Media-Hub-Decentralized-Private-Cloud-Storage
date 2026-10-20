@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { expect, test, type Page } from '@playwright/test'
 import {
   PASSPHRASE,
+  PROFILE_NAME,
   SHOTS,
   chooseFiles,
   createIdentity,
@@ -37,6 +38,11 @@ const photos = [
 
 test('first run → upload → gallery → viewer', async () => {
   await createIdentity(page, stack)
+  // The sidebar and a short confirmation say who is signed in.
+  await expect(page.getByText(`Signed in as ${PROFILE_NAME}`).first()).toBeVisible()
+  await expect(
+    page.getByRole('navigation', { name: 'Main' }).getByText(PROFILE_NAME, { exact: true }),
+  ).toBeVisible()
 
   // Empty library explains the next action; no fake content.
   await expect(page.getByRole('heading', { name: 'No photos or videos yet' })).toBeVisible()
@@ -78,7 +84,25 @@ test('first run → upload → gallery → viewer', async () => {
     expect(Math.max(w!, h!)).toBeLessThanOrEqual(512) // thumbnails, not originals
   }
   await expect(page.locator('.tile__badge')).toHaveCount(1)
+  await page.waitForTimeout(700) // let the totals finish counting
   await page.screenshot({ path: `${SHOTS}/library-1440.png` })
+
+  // Totals and the ledger view are measured from the same metadata events.
+  const vault = page.getByRole('region', { name: 'Library totals' })
+  await expect(vault).toContainText('6 photos')
+  await expect(vault).toContainText('1 video')
+  await page.getByRole('button', { name: 'Ledger view' }).click()
+  const rows = page.locator('table.ledger tbody tr')
+  await expect(rows).toHaveCount(7)
+  const hashes = await rows
+    .locator('.ledger__hash code')
+    .evaluateAll((els) => els.map((e) => e.getAttribute('title')))
+  for (const h of hashes) expect(h).toMatch(/^[0-9a-f]{64}$/)
+  await panel.getByRole('button', { name: 'Clear' }).click()
+  await page.waitForTimeout(500)
+  await page.screenshot({ path: `${SHOTS}/ledger-1440.png` })
+  await page.getByRole('button', { name: 'Grid view' }).click()
+  await expect(tiles).toHaveCount(7)
 
   // Thumbnails load first: no original has been requested yet.
   const originalRequests: string[] = []
@@ -99,9 +123,13 @@ test('first run → upload → gallery → viewer', async () => {
   await page.screenshot({ path: `${SHOTS}/viewer-1440.png` })
 
   // Keyboard: next, previous, details, close; focus returns to the grid.
+  await expect(viewer).toBeFocused() // keys go to the viewer once it has focus
   const first = page.url()
   await page.keyboard.press('ArrowRight')
   await expect(page).not.toHaveURL(first)
+  // Let the viewer finish showing the next item; focus must stay inside it for the next key.
+  await expect(viewer).toBeFocused()
+  await page.waitForTimeout(300)
   await page.keyboard.press('ArrowLeft')
   await expect(page).toHaveURL(first)
   await page.keyboard.press('i')
@@ -187,6 +215,7 @@ test('deleting removes the metadata and the stored file', async () => {
   await expect(page.locator('.tile__main')).toHaveCount(7)
 
   await page.locator('.tile__main').first().click()
+  await expect(page).toHaveURL(/\/m\/[0-9a-f]{64}/)
   const sha = page.url().match(/\/m\/([0-9a-f]{64})/)![1]!
   expect((await fetch(`${stack.server.url}/${sha}`)).status).toBe(200)
 

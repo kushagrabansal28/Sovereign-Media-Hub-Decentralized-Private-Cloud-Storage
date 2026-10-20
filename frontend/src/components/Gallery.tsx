@@ -265,6 +265,7 @@ const Tile = memo(function Tile({
         type="button"
         className="tile__main"
         data-index={index}
+        data-sha={item.sha256}
         tabIndex={tabbable ? 0 : -1}
         aria-label={label}
         aria-pressed={selecting ? selected : undefined}

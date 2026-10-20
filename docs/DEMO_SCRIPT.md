@@ -2,6 +2,10 @@
 
 About 12 minutes. Everything runs on one laptop. Open the repository folder in PowerShell for the commands below.
 
+## Do I need Docker?
+
+No. Everything in this demo runs directly on the laptop: the Go server, the development relay and the web app (the three commands below). Docker is only used to package the same three parts into containers with automatic HTTPS on a real domain, which is the way a person would run it on a home server or a VPS. That packaging is described in `docs/DEPLOYMENT.md`; GitHub's checks build the images, but it has not been run on the development machine, and the report says so.
+
 ## Before the demo
 
 Start three things, each in its own PowerShell window, from the repository root. Go and Node must be installed.
@@ -47,6 +51,8 @@ Point at the **How it works** column on the right.
 3. Say: "The key is saved only in encrypted form, protected by this passphrase."
 4. On **Back up your key**: click **Download encrypted backup**. Click **Show secret key (nsec)** and then **Hide**. Tick **I have stored a backup** and **Continue**.
 5. Optional: press **Skip backup** first to show the warning dialog, then **Escape**.
+6. On **What should we call you?**: type `Kushagra Bansal`, click **Choose photo** and pick any picture, then **Continue**. Say: "The name and photo are saved only in this browser, beside the key. They are never sent to the server or to relays."
+7. When the library opens, a message says **Signed in as Kushagra Bansal** and the sidebar shows the photo and name.
 
 ## 3. Connect
 
@@ -61,6 +67,8 @@ Point at the **How it works** column on the right.
 3. `notes.txt` is refused immediately with "Only JPEG, PNG, GIF, WebP, AVIF, MP4, MOV and WebM files can be uploaded."
 4. `copy-of-photo.jpg` shows **Already in your library**. Say: "The same bytes have the same hash, so nothing was sent."
 5. Say: "Thumbnails are made in the browser and uploaded as their own small files. The original is never re-encoded."
+
+The first screen also has **Try it: a file's address**. Type any text and its SHA-256 appears. Say: "Every file is named by this fingerprint of its contents. Change one letter and every digit changes. The same content always gives the same name, which is how a duplicate is recognised."
 
 ## 5. Prove it, outside the browser
 
@@ -115,7 +123,7 @@ The two hashes are identical. Say: "The server named the file by the hash of wha
 
 1. **Settings → Identity**: the public key, **Lock**, **Back up key**.
 2. Chrome DevTools → **Application → Local Storage**: `smh.identity.v1` contains `ncryptsec1…` and the public key, nothing readable. Session Storage is empty.
-3. Click **Lock** in the sidebar: the unlock screen appears. A wrong passphrase gives an error and keeps the identity. The right one unlocks.
+3. Click **Lock** in the sidebar: the unlock screen appears with your photo and **Welcome back, Kushagra Bansal**. A wrong passphrase gives an error and keeps the identity. The right one unlocks and shows **Signed in as Kushagra Bansal** again. (Settings → Identity → **Edit profile** changes the name or photo.)
 4. **Settings → Storage → Measure storage** shows the files on the server for this key.
 5. **Settings → Appearance**: switch Light and Dark.
 6. Read the **What is visible to whom** section aloud: relays see metadata, not files; file URLs are not secret; files are not end to end encrypted.
@@ -124,7 +132,7 @@ The two hashes are identical. Say: "The server named the file by the hash of wha
 
 | Claim | Where |
 | --- | --- |
-| Tests | `cd backend; go test ./...` (42 tests), `cd frontend; npm test` (131 tests), `npx playwright test` (20 browser scenarios) |
+| Tests | `cd backend; go test ./...` (42 tests), `cd frontend; npm test` (142 tests), `npx playwright test` (22 browser scenarios) |
 | Measurements | `docs/BENCHMARK_RESULTS.md`, charts in `docs/benchmarks/charts` |
 | Screenshots | `docs/screenshots` |
 | Prototype problems | `docs/REPOSITORY_AUDIT.md` |

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { startApp } from './services'
+import { Cursor } from './components/Cursor'
 import { Shell } from './components/Shell'
 import { Toasts } from './components/ui'
 import Library from './pages/Library'
@@ -22,6 +23,7 @@ export default function App() {
   if (id.phase === 'none' || (id.phase === 'unlocked' && !confirmed)) {
     return (
       <>
+        <Cursor />
         <Welcome />
         <Toasts />
       </>
@@ -30,6 +32,7 @@ export default function App() {
   if (id.phase === 'locked') {
     return (
       <>
+        <Cursor />
         <Unlock />
         <Toasts />
       </>
@@ -38,6 +41,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <Cursor />
       <Routes>
         <Route element={<Shell />}>
           <Route index element={<Library />} />

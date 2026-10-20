@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Download, Eye, EyeOff, Lock, RefreshCw, Trash2 } from 'lucide-react'
 import { library, relays, server } from '../services'
+import { Avatar, ProfileFields } from '../components/Avatar'
 import { RelaySection, StorageServerSection } from '../components/connections'
 import { Button, ConfirmDialog, copyText, CopyButton, Dialog, notify } from '../components/ui'
 import { authorization, deleteBlob, listAllBlobs, type BlobDescriptor } from '../lib/blossom/client'
@@ -8,6 +9,7 @@ import { formatAgo, formatBytes } from '../lib/format'
 import { npubOf, nsecOf } from '../lib/nostr/keys'
 import { cache } from '../lib/storage/cache'
 import { identity, useIdentity } from '../stores/identity'
+import { cleanName, profiles, useProfile } from '../stores/profile'
 import { useLibraryState } from '../stores/library'
 import { applyTheme, settings, useSettings, type Theme } from '../stores/settings'
 
@@ -61,6 +63,7 @@ function IdentitySection({
   return (
     <section className="page__section" aria-labelledby="h-id">
       <h2 id="h-id">Identity</h2>
+      <ProfileEditor pubkey={pubkey} />
       <dl className="kv">
         <dt>Public key</dt>
         <dd>
@@ -101,6 +104,7 @@ function IdentitySection({
         onCancel={() => setForget(false)}
         onConfirm={() => {
           setForget(false)
+          profiles.remove(pubkey)
           identity.forget()
         }}
       >
@@ -110,6 +114,63 @@ function IdentitySection({
         </p>
       </ConfirmDialog>
     </section>
+  )
+}
+
+function ProfileEditor({ pubkey }: { pubkey: string }) {
+  const saved = useProfile(pubkey)
+  const [editing, setEditing] = useState(false)
+  const [name, setName] = useState(saved?.name ?? '')
+  const [picture, setPicture] = useState<string | undefined>(saved?.picture)
+
+  if (!editing) {
+    return (
+      <div className="profile-row">
+        <Avatar name={saved?.name ?? '?'} picture={saved?.picture} size={48} />
+        <div className="profile-row__text">
+          <strong>{saved?.name ?? 'No name set'}</strong>
+          <span className="secondary">Shown on this device only.</span>
+        </div>
+        <Button
+          size="sm"
+          onClick={() => {
+            setName(saved?.name ?? '')
+            setPicture(saved?.picture)
+            setEditing(true)
+          }}
+        >
+          Edit profile
+        </Button>
+      </div>
+    )
+  }
+  return (
+    <form
+      className="stack"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (profiles.set(pubkey, { name, picture })) {
+          setEditing(false)
+          notify('Profile saved.')
+        }
+      }}
+    >
+      <ProfileFields
+        name={name}
+        picture={picture}
+        onName={setName}
+        onPicture={setPicture}
+        autoFocus
+      />
+      <div className="inline">
+        <Button type="submit" variant="primary" disabled={!cleanName(name)}>
+          Save profile
+        </Button>
+        <Button variant="ghost" onClick={() => setEditing(false)}>
+          Cancel
+        </Button>
+      </div>
+    </form>
   )
 }
 

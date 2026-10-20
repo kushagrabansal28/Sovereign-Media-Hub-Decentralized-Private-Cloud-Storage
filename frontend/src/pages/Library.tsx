@@ -8,6 +8,8 @@ import {
   Film,
   Image as ImageIcon,
   ImageUp,
+  LayoutGrid,
+  Rows3,
   Search,
   Trash2,
   Upload,
@@ -16,9 +18,12 @@ import {
 } from 'lucide-react'
 import { library, relays, server, uploads, useRelayStatuses } from '../services'
 import { GridSkeleton, JustifiedGrid } from '../components/Gallery'
+import { Ledger, VaultStrip } from '../components/Vault'
 import { Viewer } from '../components/Viewer'
 import { Button, ConfirmDialog, IconButton, notify, Select } from '../components/ui'
 import { formatAgo } from '../lib/format'
+import { vaultStats } from '../lib/media/stats'
+import { withTransition } from '../lib/transition'
 import { deleteMedia, describeDelete, downloadOriginal } from '../lib/media/actions'
 import {
   applyQuery,
@@ -30,6 +35,7 @@ import {
 } from '../lib/media/query'
 import type { MediaItem } from '../lib/nostr/events'
 import { useServerStatus } from '../stores/connections'
+import { useUploads } from '../stores/uploads'
 import { identity } from '../stores/identity'
 import { useLibraryState } from '../stores/library'
 import { useSettings } from '../stores/settings'
@@ -62,6 +68,8 @@ export default function Library() {
   const { sha } = useParams()
   const navigate = useNavigate()
   const query = parseQuery(params)
+  const view = params.get('view') === 'ledger' ? 'ledger' : 'grid'
+  const uploadItems = useUploads(uploads)
   const fileInput = useRef<HTMLInputElement>(null)
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -76,6 +84,9 @@ export default function Library() {
     [state.items, text, typeFilter, sort],
   )
   const selecting = selectMode || selected.size > 0
+  const stats = useMemo(() => vaultStats(state.items), [state.items])
+  const skipped = uploadItems.filter((u) => u.status === 'duplicate')
+  const bytesAvoided = skipped.reduce((n, u) => n + u.file.size, 0)
 
   const update = useCallback(
     (patch: Record<string, string | null>) => {
@@ -85,7 +96,8 @@ export default function Library() {
           v === null ||
           v === '' ||
           (k === 'type' && v === 'all') ||
-          (k === 'sort' && v === 'added-desc')
+          (k === 'sort' && v === 'added-desc') ||
+          (k === 'view' && v === 'grid')
         )
           next.delete(k)
         else next.set(k, v)
@@ -96,11 +108,22 @@ export default function Library() {
   )
 
   const openItem = useCallback(
-    (item: MediaItem) => navigate({ pathname: `/m/${item.sha256}`, search: params.toString() }),
+    (item: MediaItem) => {
+      const source = document.querySelector<HTMLElement>(
+        `.tile__main[data-sha="${item.sha256}"] img`,
+      )
+      withTransition(() => navigate({ pathname: `/m/${item.sha256}`, search: params.toString() }), {
+        source,
+        until: () => document.querySelector('.viewer') !== null,
+      })
+    },
     [navigate, params],
   )
   const closeViewer = useCallback(
-    () => navigate({ pathname: '/', search: params.toString() }),
+    () =>
+      withTransition(() => navigate({ pathname: '/', search: params.toString() }), {
+        until: () => document.querySelector('.viewer') === null,
+      }),
     [navigate, params],
   )
 
@@ -289,6 +312,26 @@ export default function Library() {
             options={SORT_OPTIONS}
             onChange={(v) => update({ sort: v })}
           />
+          <div className="segmented segmented--icons" role="group" aria-label="Layout">
+            <button
+              type="button"
+              aria-pressed={view === 'grid'}
+              aria-label="Grid view"
+              title="Grid"
+              onClick={() => update({ view: 'grid' })}
+            >
+              <LayoutGrid className="icon icon--sm" />
+            </button>
+            <button
+              type="button"
+              aria-pressed={view === 'ledger'}
+              aria-label="Ledger view"
+              title="Ledger: hashes, sizes, events"
+              onClick={() => update({ view: 'ledger' })}
+            >
+              <Rows3 className="icon icon--sm" />
+            </button>
+          </div>
           <span className="toolbar__meta" aria-live="polite">
             {visible.length === state.items.length
               ? `${state.items.length.toLocaleString()} ${state.items.length === 1 ? 'item' : 'items'}`
@@ -340,8 +383,21 @@ export default function Library() {
           </p>
         )}
 
+        {!showSkeleton && state.items.length > 0 && !selecting && (
+          <VaultStrip
+            stats={stats}
+            relaysConnected={relayStatuses.filter((r) => r.state === 'connected').length}
+            relaysTotal={settings.relays.length}
+            lastSyncAt={state.lastSyncAt}
+            duplicatesAvoided={skipped.length}
+            bytesAvoided={bytesAvoided}
+          />
+        )}
+
         {showSkeleton ? (
           <GridSkeleton />
+        ) : visible.length > 0 && view === 'ledger' && !selecting ? (
+          <Ledger items={visible} onOpen={openItem} />
         ) : visible.length > 0 ? (
           <JustifiedGrid
             items={visible}

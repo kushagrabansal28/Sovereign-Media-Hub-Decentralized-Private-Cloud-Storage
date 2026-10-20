@@ -6,6 +6,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import matplotlib
+import matplotlib.ticker
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
@@ -14,23 +15,34 @@ ROOT = Path(__file__).resolve().parents[2] / "docs" / "benchmarks"
 OUT = ROOT / "charts"
 OUT.mkdir(exist_ok=True)
 
-ACCENT = "#9a5a0c"
-NEUTRAL = "#6a655d"
-LIGHT = "#c5bfb4"
+# Palette and font follow the course review paper (Calibri, Word blue).
+ACCENT = "#2E74B5"
+DEEP = "#1F3763"
+NEUTRAL = "#44546A"
+LIGHT = "#B4C7E7"
+GRID = "#D9E2F3"
 
 plt.rcParams.update(
     {
-        "font.family": "sans-serif",
+        "font.family": ["Calibri", "Carlito", "DejaVu Sans"],
+        "font.size": 10,
+        "axes.grid": True,
+        "axes.grid.axis": "y",
+        "grid.color": GRID,
+        "grid.linewidth": 0.9,
+        "axes.axisbelow": True,
         "axes.spines.top": False,
         "axes.spines.right": False,
         "axes.edgecolor": NEUTRAL,
-        "axes.labelcolor": "#1c1a17",
-        "xtick.color": "#1c1a17",
-        "ytick.color": "#1c1a17",
+        "axes.labelcolor": "#1A1A1A",
+        "xtick.color": "#1A1A1A",
+        "ytick.color": "#1A1A1A",
         "figure.dpi": 150,
-        "axes.titlesize": 11,
+        "axes.titlesize": 12,
         "axes.titleweight": "bold",
+        "axes.titlecolor": DEEP,
         "axes.titlelocation": "left",
+        "axes.titlepad": 12,
     }
 )
 
@@ -43,9 +55,14 @@ def rows(name):
         return list(csv.DictReader(f))
 
 
+def legend_below(ax, columns):
+    """Legends go under the plot so they can never sit on top of the data."""
+    ax.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.24), ncol=columns)
+
+
 def save(fig, name):
     fig.tight_layout()
-    fig.savefig(OUT / name)
+    fig.savefig(OUT / name, bbox_inches="tight", pad_inches=0.15)
     plt.close(fig)
     print("wrote", OUT / name)
 
@@ -63,12 +80,13 @@ if d:
     ax.bar([i - w / 2 for i in x], logical, w, label="Sent by clients", color=LIGHT)
     ax.bar([i + w / 2 for i in x], stored, w, label="Stored on disk", color=ACCENT)
     for i, s in zip(x, savings):
-        ax.text(i + w / 2, stored[i] + max(logical) * 0.015, f"{s:.1f}% saved", ha="center", fontsize=8)
+        ax.text(i + w / 2, stored[i] + max(logical) * 0.03, f"{s:.1f}% saved", ha="center", fontsize=10, color=DEEP)
+    ax.set_ylim(0, max(logical) * 1.12)
     ax.set_xticks(list(x), labels)
     ax.set_xlabel("Share of uploads that repeat an earlier file")
     ax.set_ylabel("MiB")
     ax.set_title("Content addressing: bytes sent vs bytes stored (100 uploads)")
-    ax.legend(frameon=False, loc="upper right")
+    legend_below(ax, 2)
     save(fig, "dedup.png")
 
 # Upload ---------------------------------------------------------------
@@ -86,7 +104,7 @@ if u:
     for key, label, color, marker in (
         ("upload_ms", "Upload (PUT /upload)", ACCENT, "o"),
         ("duplicate_put_ms", "Upload of identical bytes", NEUTRAL, "s"),
-        ("hash_ms", "SHA-256 in the client", "#1f5f9e", "^"),
+        ("hash_ms", "SHA-256 in the client", DEEP, "^"),
     ):
         y = [med(key, s) for s in sizes]
         err = [[med(key, s) - lo(key, s) for s in sizes], [hi(key, s) - med(key, s) for s in sizes]]
@@ -94,17 +112,19 @@ if u:
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xticks(sizes, [f"{s:g}" for s in sizes])
+    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
+    ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
     ax.set_xlabel("File size (MB)")
     ax.set_ylabel("Time (ms), median with min–max")
     ax.set_title("Hashing and upload time by file size (5 runs each)")
-    ax.legend(frameon=False)
+    legend_below(ax, 3)
     save(fig, "upload_time.png")
 
     fig, ax = plt.subplots(figsize=(6.2, 3.0))
     tp = [med("throughput_mb_s", s) for s in sizes]
     ax.bar([f"{s:g}" for s in sizes], tp, color=ACCENT)
     for i, v in enumerate(tp):
-        ax.text(i, v + max(tp) * 0.01, f"{v:.0f}", ha="center", fontsize=8)
+        ax.text(i, v + max(tp) * 0.01, f"{v:.0f}", ha="center", fontsize=10, color=DEEP)
     ax.set_xlabel("File size (MB)")
     ax.set_ylabel("MB/s, median")
     ax.set_title("Upload throughput on loopback")
@@ -118,7 +138,7 @@ if c:
     v = [float(r["aggregate_mb_s"]) for r in c]
     ax.bar(n, v, color=ACCENT)
     for i, val in enumerate(v):
-        ax.text(i, val + max(v) * 0.01, f"{val:.0f}", ha="center", fontsize=8)
+        ax.text(i, val + max(v) * 0.01, f"{val:.0f}", ha="center", fontsize=10, color=DEEP)
     ax.set_xlabel("Parallel uploads")
     ax.set_ylabel("Aggregate MB/s")
     ax.set_title("Eight 5 MB files at increasing concurrency")
@@ -140,13 +160,13 @@ if r:
         ax.bar([i - w / 2 for i in xs], cv, w, label="First load: every event verified", color=ACCENT)
         ax.bar([i + w / 2 for i in xs], wv, w, label="Refresh: events already cached", color=LIGHT)
         for i in xs:
-            ax.text(i - w / 2, cv[i] + max(cv) * 0.01, f"{cv[i]:.0f} ms", ha="center", fontsize=8)
-            ax.text(i + w / 2, wv[i] + max(cv) * 0.01, f"{wv[i]:.0f} ms", ha="center", fontsize=8)
+            ax.text(i - w / 2, cv[i] + max(cv) * 0.01, f"{cv[i]:.0f} ms", ha="center", fontsize=10, color=DEEP)
+            ax.text(i + w / 2, wv[i] + max(cv) * 0.01, f"{wv[i]:.0f} ms", ha="center", fontsize=10, color=DEEP)
         ax.set_xticks(list(xs), labels)
         ax.set_xlabel("Events in the library")
         ax.set_ylabel("ms, median of 3")
         ax.set_title("Fetching a whole library from a relay (500 events per page)")
-        ax.legend(frameon=False)
+        legend_below(ax, 2)
         save(fig, "relay_query.png")
 
 # Gallery --------------------------------------------------------------
@@ -165,7 +185,9 @@ if g:
         fig, ax = plt.subplots(figsize=(6.2, 3.0))
         ax.barh([i[0] for i in items][::-1], [i[1] for i in items][::-1], color=ACCENT)
         for i, (_, v) in enumerate(items[::-1]):
-            ax.text(v + max(v2 for _, v2 in items) * 0.01, i, f"{v:.0f} ms", va="center", fontsize=8)
+            ax.text(v + max(v2 for _, v2 in items) * 0.015, i, f"{v:.0f} ms", va="center", fontsize=10, color=DEEP)
+        ax.yaxis.grid(False)
+        ax.xaxis.grid(True)
         ax.set_xlabel("ms")
         ax.set_title("Gallery with 3 000 items (headless Chrome, loopback)")
         save(fig, "gallery_timing.png")

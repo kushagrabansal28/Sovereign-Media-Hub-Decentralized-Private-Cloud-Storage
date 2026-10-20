@@ -1,26 +1,31 @@
-/** Viewfinder corners around a filled square: a frame, and the thing it addresses. */
-export function LogoMark({ size = 22 }: { size?: number }) {
+/**
+ * A block seen from above-left. The lit top face is the address; the two lower faces are
+ * the content it names. It stands for a content-addressed object: one file, one name.
+ */
+export function LogoMark({ size = 22, draw = false }: { size?: number; draw?: boolean }) {
   return (
     <svg
+      className={draw ? 'logo logo--draw' : 'logo'}
       width={size}
       height={size}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="square"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+      strokeLinecap="round"
       aria-hidden="true"
     >
-      <path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5" />
-      <rect x="9" y="9" width="6" height="6" fill="var(--accent)" stroke="none" />
+      <path className="logo__top" d="M12 2.5 20.5 7.2 12 12 3.5 7.2Z" fill="var(--accent)" />
+      <path className="logo__body" d="M3.5 7.2v9.6L12 21.5l8.5-4.7V7.2M12 12v9.5" pathLength="1" />
     </svg>
   )
 }
 
-export function Wordmark({ full }: { full?: boolean }) {
+export function Wordmark({ full, draw }: { full?: boolean; draw?: boolean }) {
   return (
     <span className="wordmark">
-      <LogoMark />
+      <LogoMark draw={draw} />
       <span className="wordmark__text">{full ? 'Sovereign Media Hub' : 'Media Hub'}</span>
     </span>
   )

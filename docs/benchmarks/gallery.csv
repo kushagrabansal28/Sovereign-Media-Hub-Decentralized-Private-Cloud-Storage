@@ -1,17 +1,17 @@
 metric,detail,value,unit
-first_tile_visible,click Open library → first tile in DOM,1412,ms
-first_thumbnail_decoded,click Open library → first thumbnail loaded,1420,ms
-all_events_rendered,3000 events fetched in pages of 500 and laid out,1430,ms
-thumbnail_requests_initial,before any scrolling,50,count
+first_tile_visible,click Open library → first tile in DOM,1489,ms
+first_thumbnail_decoded,click Open library → first thumbnail loaded,1494,ms
+all_events_rendered,3000 events fetched in pages of 500 and laid out,1503,ms
+thumbnail_requests_initial,before any scrolling,45,count
 original_requests_initial,before opening any item,0,count
-dom_tiles_rendered,of 3000 items,50,count
-dom_elements_total,whole page,350,count
+dom_tiles_rendered,of 3000 items,45,count
+dom_elements_total,whole page,362,count
 grid_height,full virtual height,99964,px
 dom_tiles_max_while_scrolling,of 3000 items,75,count
-scroll_through_library,viewport-sized steps; 2 frames each,6278.2,ms
-thumbnail_requests_scrolling,unique thumbnail URLs requested while scrolling the whole library,2950,count
+scroll_through_library,viewport-sized steps; 2 frames each,5006.2,ms
+thumbnail_requests_scrolling,unique thumbnail URLs requested while scrolling the whole library,2955,count
 original_requests_scrolling,originals requested while scrolling,0,count
-first_original_ready,click tile → full-resolution image decoded,93,ms
+first_original_ready,click tile → full-resolution image decoded,71,ms
 originals_requested_on_open,one item opened,2,count
-cache_first_tile,reload; unlock; relay down → first tile,572,ms
-cache_all_items,reload; unlock; relay down → all 3000 items laid out,633,ms
+cache_first_tile,reload; unlock; relay down → first tile,613,ms
+cache_all_items,reload; unlock; relay down → all 3000 items laid out,631,ms

@@ -6,7 +6,7 @@ VIT Vellore, School of Computer Science Engineering and Information Systems. BAC
 
 | Team | Registration | Work |
 | --- | --- | --- |
-| Kushagra Yogendra Bansal | 25BDE0080 | Implementation, demo |
+| Kushagra Yogendra Bansal | 25BDE0080 | Implementation, demo, documentation |
 | Abhay Bhat | 25BDE0026 | Implementation, demo |
 | Adwit Agarwal | 25BYB0116 | Documentation |
 | Nilay Sengupta | 25BYB0255 | Documentation |

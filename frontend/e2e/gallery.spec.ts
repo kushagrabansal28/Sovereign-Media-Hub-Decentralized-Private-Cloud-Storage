@@ -6,7 +6,7 @@ import { buildMediaEvent } from '../src/lib/nostr/events'
 import { generateKey, nsecOf, signWithKey } from '../src/lib/nostr/keys'
 import { makePng } from '../tools/png'
 import { createHash } from 'node:crypto'
-import { PASSPHRASE, SHOTS, startStack, type Stack } from './helpers'
+import { PASSPHRASE, SHOTS, fillProfile, startStack, type Stack } from './helpers'
 
 /**
  * Gallery performance with a large library. Results are written to
@@ -120,6 +120,7 @@ test('first load of a 3 000 item library', async () => {
   await page.getByLabel('Passphrase', { exact: true }).fill(PASSPHRASE)
   await page.getByLabel('Repeat passphrase').fill(PASSPHRASE)
   await page.getByRole('button', { name: 'Continue' }).click()
+  await fillProfile(page)
   await page.getByLabel('Storage server').fill(stack.server.url)
   await page.getByRole('button', { name: /Save and test/ }).click()
   await page.getByText(/Reachable ·/).waitFor()

@@ -6,7 +6,7 @@ Sovereign Media Hub is a self-hosted photo and video library. The files live on 
 
 The first review paper described this architecture and the mechanisms behind it. This report describes what was built. A prototype existed at the start of the term, but it did not work end to end: its upload authorisation used the wrong scheme for Blossom servers, its metadata publication called an API that no longer exists, its gallery downloaded every original file as a thumbnail, and it stored the private key in plain text in the browser. The storage server and the web client were rewritten around the same three-part design: a Go server implementing the Blossom specifications (BUD-01, 02, 06, 11 and 12), a TypeScript client that signs and hashes locally, and a relay layer with acknowledgements, reconnection, an offline cache and a retry queue for events no relay has accepted yet.
 
-The result was exercised against a real server and relay and a real browser. The Go test suite has 42 tests, the client has 131 unit and integration tests, and 20 end-to-end scenarios run the built application in Chrome, including accessibility checks and layout checks at four viewport sizes. Measurements taken on one machine, over loopback, show that content addressing stores exactly one copy of repeated files, that a 50 MB upload completes in about a third of a second, and that a library of 3 000 items needs at most 75 tiles (about 300 elements) in the page at any moment. Fetching a 5 000-event library from a relay for the first time took 7.2 s, almost all of it signature verification; skipping events that are already cached brings a refresh to 81 ms (section 17).
+The result was exercised against a real server and relay and a real browser. The Go test suite has 42 tests, the client has 142 unit and integration tests, and 22 end-to-end scenarios run the built application in Chrome, including accessibility checks and layout checks at four viewport sizes. Measurements taken on one machine, over loopback, show that content addressing stores exactly one copy of repeated files, that a 50 MB upload completes in about a third of a second, and that a library of 3 000 items needs at most 75 tiles (about 300 elements) in the page at any moment. Fetching a 5 000-event library from a relay for the first time took 7.2 s, almost all of it signature verification; skipping events that are already cached brings a refresh to 81 ms (section 17).
 
 Not done: the container and HTTPS configuration was written but could not be run (the development machine had no Docker and there was no domain), files are not end-to-end encrypted, and the comparison with centralised services that the first paper proposed was not carried out. Section 19 lists these limits.
 
@@ -33,7 +33,7 @@ The repository at the start of term contained a React 19 client and a Go storage
 
 | Member | Registration number | Contribution |
 | --- | --- | --- |
-| Kushagra Yogendra Bansal | 25BDE0080 | Implementation and demonstration |
+| Kushagra Yogendra Bansal | 25BDE0080 | Implementation, demonstration and documentation |
 | Abhay Bhat | 25BDE0026 | Implementation and demonstration |
 | Adwit Agarwal | 25BYB0116 | Documentation |
 | Nilay Sengupta | 25BYB0255 | Documentation |
@@ -294,6 +294,37 @@ The storage server and the relays fail separately and the interface says which. 
 * axe-core (WCAG 2.0 and 2.1, A and AA) reports no violations on the welcome, protect-key, library (light and dark), viewer, settings and unlock screens. An earlier run reported one real defect, a video tile whose accessible name omitted its visible "Video" text; it was fixed.
 * No horizontal overflow at 1920, 1440, 820 and 390 px, and none at ten widths from 1280 down to 360 px; tiles stay inside the viewport.
 
+## 13.5 Design review and refinements
+
+After the first complete version the interface was reviewed screen by screen from four points of view. The findings, and what was changed, are listed here because they explain several choices that are visible in the final screenshots.
+
+| Reviewer | Finding on the first version | Change made |
+| --- | --- | --- |
+| Visual design | The logo was a generic viewfinder and said nothing about the product. The first screen was clean but showed no picture of the one idea that matters: files are named by their content. | A new mark: a block seen from above, whose lit top face is the address and whose lower faces are the content. It is drawn in on the first-run and unlock screens. The first-run screen gained an interactive address demonstration (below). |
+| Interaction design | Changing screens was abrupt. Opening a photo cut straight to a full-screen viewer, so the person lost track of which photo they had chosen. | Opening a photo is a shared-element transition: the thumbnail grows into the viewer (View Transitions API). Screens settle in with a short staggered rise. Everything is switched off when the system asks for reduced motion, and browsers without the API simply change screen. |
+| Product | The library looked like a photo grid only. A person who wants to know what is stored, how large it is and what address names it had no place to look. | A totals strip above the library (objects, bytes of originals with a photo and video split, relays connected and last sync) and a second layout, the ledger: one row per stored object with its SHA-256 address, size, dimensions, time added and the id of the event that lists it. |
+| Accessibility and performance | A custom pointer must not replace the real one, and a table of thousands of rows must not slow the page. | The cursor ring is decoration only: it is hidden from assistive technology, ignores the pointer, and exists only for a mouse and without reduced-motion. The native cursor is kept, restyled. The ledger shows 100 rows at a time and says how many remain. Axe reports no violations on the ledger at laptop, tablet and phone width. |
+
+**Address demonstration.** The first-run screen has a text box and, under it, the SHA-256 of whatever is typed, computed in the browser with the same function that names uploaded files. Characters that change on each keystroke flash. A test checks it against the standard test vector for the text "abc" (`ba7816bf 8f01cfea 414140de 5dae2223 b00361a3 96177a9c b410ff61 f20015ad`). It is the quickest way to show that identical content has one address and that any change produces a different one.
+
+**Cursor.** The pointer is a small ochre arrow with a dark outline, and a dot over clickable things. A soft ring follows it with a short delay. It widens over buttons and links, becomes a labelled disc ("Open" over a photo, "Play" over a video), becomes a thin bar over text fields, and shrinks while the button is pressed.
+
+**Totals are measured, not estimated.** Every figure in the strip is summed from the metadata events the library already holds; when an event has no size the strip says how many items are missing one instead of guessing. The "Saved by addressing" figure appears only after a duplicate upload has actually been skipped in the current session, and shows the bytes of the skipped files.
+
+**Name and photo.** After the key is protected and backed up, setup asks for a name and an optional photo ("What should we call you?"). They are saved in this browser beside the key, keyed by the public key, and are never sent to the storage server or to a relay: publishing them as a Nostr profile event would make them public, which a private library should not do by default. The photo is cropped to the centre and scaled to 160 px in the browser and kept as a small JPEG; the original is not stored. The name appears in the sidebar with the photo, on the unlock screen ("Welcome back"), and in a short "Signed in as ..." message each time the library opens. Settings has an Edit profile control, and removing the identity from the device removes the profile with it.
+
+![Figure 17. Setup step 3 of 4: the name and photo.](../docs/screenshots/setup-profile-filled-laptop.png)
+
+![Figure 18. The unlock screen greets the saved identity by name and photo.](../docs/screenshots/unlock-mobile.png)
+
+![Figure 19. First-run screen with the address demonstration.](../docs/screenshots/welcome-laptop.png)
+
+![Figure 20. Library with the totals strip.](../docs/screenshots/library-1440.png)
+
+![Figure 21. The ledger layout: every object with its SHA-256 address, size, dimensions, time added and event id.](../docs/screenshots/ledger-1440.png)
+
+![Figure 22. The ledger at phone width; secondary columns are dropped, never squeezed.](../docs/screenshots/ledger-mobile.png)
+
 # 14. Security analysis and threat model
 
 `docs/THREAT_MODEL.md` lists 21 threats with mitigations and residual risk; `docs/SECURITY_REVIEW.md` records the review. The main points:
@@ -322,8 +353,8 @@ Defects found during the review of the new code, not only in the prototype: `go-
 | Suite | Count | What it covers |
 | --- | --- | --- |
 | Go (`go test ./...`) | 42 tests plus table-driven cases | Token validation, storage and deduplication, concurrency, limits, paths, restart, reconcile, pragmas |
-| Vitest, libraries and stores | 131 tests in 10 files | Keys and NIP-49, events and validation, token format, relay manager against a local relay, layout, search, file-type detection, identity lifecycle, and an integration suite against the real Go server |
-| Playwright, in Chrome | 20 scenarios | First run to deletion; verified download; duplicates; relay outage; server outage; keyboard; accessibility; responsive layout; key storage; 3 000-item gallery |
+| Vitest, libraries and stores | 142 tests in 12 files | Keys and NIP-49, events and validation, token format, relay manager against a local relay, layout, search, file-type detection, identity lifecycle, and an integration suite against the real Go server |
+| Playwright, in Chrome | 22 scenarios | First run to deletion; verified download; duplicates; relay outage; server outage; keyboard; accessibility; responsive layout (including the ledger); address demonstration; key storage; 3 000-item gallery |
 
 The integration suite starts the Go server and a relay, uploads real PNG files, checks the event the relay received, retrieves the bytes and compares hashes, uploads the same file from a second index and checks that the server still has two files (original and thumbnail), makes a relay refuse an event and checks that it is queued and delivered later, stops the relay and checks that the cached library opens, restarts the server and checks the bytes, and deletes through both layers.
 
@@ -347,7 +378,7 @@ Each scenario uploads 100 files of 200 KiB to 2 MiB; the stated share of uploads
 
 {{table:dedup}}
 
-![Figure 17. Bytes sent against bytes stored.](../docs/benchmarks/charts/dedup.png)
+![Figure 23. Bytes sent against bytes stored.](../docs/benchmarks/charts/dedup.png)
 
 Storage equals the bytes of the distinct files in every scenario: 100 uploads at a 75 % repeat rate left 25 files on disk. The saving is a property of the repeat rate chosen and is not a measurement of real users.
 
@@ -357,7 +388,7 @@ Median of five runs per size. Hashing is the browser's native SHA-256 (here Node
 
 {{table:upload}}
 
-![Figure 18. Hashing and upload time by file size.](../docs/benchmarks/charts/upload_time.png)
+![Figure 24. Hashing and upload time by file size.](../docs/benchmarks/charts/upload_time.png)
 
 ## 17.4 Concurrent uploads
 
@@ -365,13 +396,13 @@ Eight 5 MB files sent by 1, 2, 4 and 8 workers.
 
 {{table:concurrency}}
 
-![Figure 19. Aggregate throughput by number of parallel uploads.](../docs/benchmarks/charts/concurrency.png)
+![Figure 25. Aggregate throughput by number of parallel uploads.](../docs/benchmarks/charts/concurrency.png)
 
 ## 17.5 Relay behaviour
 
 {{table:relay}}
 
-![Figure 20. Time to fetch a whole library from a relay.](../docs/benchmarks/charts/relay_query.png)
+![Figure 26. Time to fetch a whole library from a relay.](../docs/benchmarks/charts/relay_query.png)
 
 ## 17.6 Gallery with 3 000 items
 
@@ -379,9 +410,9 @@ Chrome (headless, no GPU) opens the production build with 3 000 seeded metadata 
 
 {{table:gallery}}
 
-![Figure 21. Time to first tile, first thumbnail, and the whole library.](../docs/benchmarks/charts/gallery_timing.png)
+![Figure 27. Time to first tile, first thumbnail, and the whole library.](../docs/benchmarks/charts/gallery_timing.png)
 
-![Figure 22. The 3 000-item library, laptop width.](../docs/screenshots/library-3000-1440.png)
+![Figure 28. The 3 000-item library, laptop width.](../docs/screenshots/library-3000-1440.png)
 
 # 18. Results and discussion
 

@@ -8,8 +8,10 @@ import { useServerStatus } from '../stores/connections'
 import { identity, useIdentity } from '../stores/identity'
 import { useLibraryState } from '../stores/library'
 import { useSettings } from '../stores/settings'
+import { useProfile } from '../stores/profile'
+import { Avatar } from './Avatar'
 import { Wordmark } from './Logo'
-import { Button, Dialog, IconButton, Toasts } from './ui'
+import { Button, Dialog, IconButton, notify, Toasts } from './ui'
 import { UploadPanel } from './UploadPanel'
 
 type Tone = 'ok' | 'warn' | 'bad' | 'busy'
@@ -40,6 +42,8 @@ function useConnectionSummary() {
   return { storage, relay, queued }
 }
 
+let lastWelcome = 0
+
 export function Shell() {
   const id = useIdentity()
   const summary = useConnectionSummary()
@@ -64,6 +68,14 @@ export function Shell() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+  const profile = useProfile(id.phase === 'unlocked' ? id.pubkey : undefined)
+  useEffect(() => {
+    // Once per sign-in: say who is signed in.
+    if (!profile || Date.now() - lastWelcome < 2000) return
+    lastWelcome = Date.now()
+    notify(`Signed in as ${profile.name}`)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.name])
   if (id.phase !== 'unlocked') return null
   const npub = npubOf(id.pubkey)
 
@@ -133,6 +145,12 @@ export function Shell() {
               </div>
             )}
           </dl>
+          {profile && (
+            <div className="nav__user">
+              <Avatar name={profile.name} picture={profile.picture} size={32} />
+              <span className="nav__name">{profile.name}</span>
+            </div>
+          )}
           <div className="nav__id">
             <span className="mono nav__npub" title={npub}>
               {shorten(npub, 9, 4)}

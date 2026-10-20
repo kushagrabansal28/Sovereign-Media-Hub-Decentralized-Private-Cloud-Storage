@@ -2,7 +2,9 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 import {
   PASSPHRASE,
+  PROFILE_NAME,
   SHOTS,
+  fillProfile,
   chooseFiles,
   createIdentity,
   openApp,
@@ -84,10 +86,25 @@ test('first-run screens at four sizes', async ({ browser }) => {
     await p.goto('/')
     await p.getByRole('heading', { name: 'Your library. Your server.' }).waitFor()
     await noHorizontalOverflow(p, `welcome ${name}`)
+    await p.waitForTimeout(1300) // entrance animations and the logo draw-in
     await p.screenshot({ path: `${SHOTS}/welcome-${name}.png` })
     if (name === 'laptop') await axe(p, 'welcome')
     await ctx.close()
   }
+})
+
+test('the address demo shows the real SHA-256 of what is typed', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: VIEWPORTS.laptop })
+  const p = await ctx.newPage()
+  await p.goto('/')
+  await p.getByLabel('Text to fingerprint').fill('abc')
+  // FIPS 180-2 test vector.
+  await expect(p.getByTestId('hashdemo-hash')).toHaveText(
+    'ba7816bf 8f01cfea 414140de 5dae2223 b00361a3 96177a9c b410ff61 f20015ad',
+  )
+  await p.getByLabel('Text to fingerprint').fill('abd')
+  await expect(p.getByTestId('hashdemo-hash')).not.toHaveText(/^ba7816bf/)
+  await ctx.close()
 })
 
 test('identity setup steps', async ({ browser }) => {
@@ -124,6 +141,22 @@ test('identity setup steps', async ({ browser }) => {
   await p.screenshot({ path: `${SHOTS}/setup-skip-backup-laptop.png` })
   await p.keyboard.press('Escape')
   await expect(p.getByRole('dialog')).toBeHidden()
+
+  // Then the name and photo: required name, optional photo, kept on this device.
+  await p.getByLabel(/I have stored a backup/).check()
+  await p.getByRole('button', { name: 'Continue' }).click()
+  await p.getByRole('heading', { name: 'What should we call you?' }).waitFor()
+  await expect(p.getByRole('button', { name: 'Continue' })).toBeDisabled()
+  await p.screenshot({ path: `${SHOTS}/setup-profile-laptop.png` })
+  await axe(p, 'setup profile')
+  await fillProfile(p, { submit: false })
+  await expect(p.getByText(`Signed in as ${PROFILE_NAME}`)).toBeVisible()
+  await p.waitForTimeout(500)
+  await p.screenshot({ path: `${SHOTS}/setup-profile-filled-laptop.png` })
+  await p.getByRole('button', { name: 'Continue' }).click()
+  await p.getByRole('heading', { name: 'Connect your storage and relays' }).waitFor()
+  const profiles = await p.evaluate(() => localStorage.getItem('smh.profiles.v1') ?? '')
+  expect(profiles).toContain(PROFILE_NAME)
   await ctx.close()
 
   // The secret key must not be reachable from storage or the URL.
@@ -176,6 +209,23 @@ test('library with 31 items at four sizes, light and dark', async () => {
   await page.screenshot({ path: `${SHOTS}/library-dark-laptop.png` })
   await axe(page, 'library dark')
   await page.emulateMedia({ colorScheme: 'light' })
+})
+
+test('ledger view at tablet and phone width', async () => {
+  for (const [name, size] of [
+    ['tablet', VIEWPORTS.tablet],
+    ['mobile', VIEWPORTS.mobile],
+  ] as const) {
+    await page.setViewportSize(size)
+    await page.getByRole('button', { name: 'Ledger view' }).click()
+    await expect(page.locator('table.ledger')).toBeVisible()
+    await page.waitForTimeout(700)
+    await noHorizontalOverflow(page, `ledger ${name}`)
+    await axe(page, `ledger ${name}`)
+    await page.screenshot({ path: `${SHOTS}/ledger-${name}.png` })
+    await page.getByRole('button', { name: 'Grid view' }).click()
+  }
+  await page.setViewportSize(VIEWPORTS.laptop)
 })
 
 test('selection, search and empty results', async () => {
@@ -254,7 +304,8 @@ test('settings at four sizes', async () => {
 
 test('layout holds at intermediate widths', async () => {
   await openApp(page, '/')
-  await expect(page.locator('.tile__main')).toHaveCount(31)
+  // The grid renders only the rows near the viewport, so not all 31 tiles are in the page.
+  await expect.poll(() => page.locator('.tile__main').count()).toBeGreaterThanOrEqual(20)
   for (const w of [1280, 1100, 1099, 960, 768, 720, 719, 600, 480, 360]) {
     await page.setViewportSize({ width: w, height: 800 })
     await page.waitForTimeout(150)
@@ -326,6 +377,9 @@ test('unlock screen', async ({ browser }) => {
   await page.setViewportSize(VIEWPORTS.mobile)
   await page.goto('/')
   await page.getByRole('heading', { name: 'Unlock your identity' }).waitFor()
+  await expect(page.getByText('Welcome back')).toBeVisible()
+  await expect(page.getByText(PROFILE_NAME, { exact: true })).toBeVisible()
+  await page.waitForTimeout(600)
   await page.screenshot({ path: `${SHOTS}/unlock-mobile.png` })
   await page.getByLabel('Passphrase').fill('wrong passphrase')
   await page.getByRole('button', { name: 'Unlock' }).click()

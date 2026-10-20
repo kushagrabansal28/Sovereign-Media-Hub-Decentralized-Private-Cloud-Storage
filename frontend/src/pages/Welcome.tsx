@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ArchiveRestore,
   ChevronRight,
@@ -10,13 +10,24 @@ import {
   ShieldAlert,
 } from 'lucide-react'
 import { RelaySection, StorageServerSection } from '../components/connections'
+import { Avatar, ProfileFields } from '../components/Avatar'
 import { Wordmark } from '../components/Logo'
+import { sha256Native } from '../lib/blossom/sha256'
 import { Button, ConfirmDialog, copyText, Field, notify } from '../components/ui'
 import { KeyError, isEncryptedKey, npubOf, nsecOf, publicKeyOf } from '../lib/nostr/keys'
 import { identity, useIdentity } from '../stores/identity'
+import { cleanName, profiles } from '../stores/profile'
 import { settings } from '../stores/settings'
 
-type Step = 'choose' | 'protect' | 'backup' | 'import' | 'connections'
+type Step = 'choose' | 'protect' | 'backup' | 'import' | 'profile' | 'connections'
+type Origin = 'create' | 'import' | 'extension'
+
+/** The numbered steps for each way of getting an identity. */
+const PLANS: Record<Origin, Step[]> = {
+  create: ['protect', 'backup', 'profile', 'connections'],
+  import: ['protect', 'profile', 'connections'],
+  extension: ['profile', 'connections'],
+}
 
 const MIN_PASSPHRASE = 8
 
@@ -34,20 +45,32 @@ const paint = () => new Promise((r) => setTimeout(r, 30))
 
 export default function Welcome() {
   const identityState = useIdentity()
-  // Returning mid-onboarding with an unlocked identity: only the connections step is left.
+  // Returning mid-onboarding with an unlocked identity: only the profile and connections are left.
   const [step, setStep] = useState<Step>(
-    identityState.phase === 'unlocked' ? 'connections' : 'choose',
+    identityState.phase === 'unlocked'
+      ? profiles.get(identityState.pubkey)
+        ? 'connections'
+        : 'profile'
+      : 'choose',
   )
-  const [origin, setOrigin] = useState<'create' | 'import'>('create')
+  const [origin, setOrigin] = useState<Origin>(
+    identityState.phase === 'unlocked' && identityState.source === 'extension'
+      ? 'extension'
+      : 'create',
+  )
   const [pubkey, setPubkey] = useState('')
   const [protectedByPassphrase, setProtected] = useState(false)
+
+  const plan = PLANS[origin]
+  const label = (s: Step) => `Step ${plan.indexOf(s) + 1} of ${plan.length}`
+  const signedInPubkey = identityState.phase === 'unlocked' ? identityState.pubkey : ''
 
   const finish = () => settings.update({ confirmed: true })
 
   return (
     <div className="welcome">
       <header className="welcome__top">
-        <Wordmark full />
+        <Wordmark full draw />
       </header>
       <main id="main" className={`welcome__main${step === 'choose' ? ' welcome__main--wide' : ''}`}>
         {step === 'choose' && (
@@ -57,7 +80,10 @@ export default function Welcome() {
               setPubkey(publicKeyOf(identity.create().secretKey))
               setStep('protect')
             }}
-            onExtension={() => setStep('connections')}
+            onExtension={() => {
+              setOrigin('extension')
+              setStep('profile')
+            }}
             onImport={() => {
               setOrigin('import')
               setStep('import')
@@ -76,23 +102,32 @@ export default function Welcome() {
         {step === 'protect' && (
           <Protect
             pubkey={pubkey}
+            label={label('protect')}
             onBack={() => {
               identity.forget()
               setStep('choose')
             }}
             onDone={(sessionOnlyChoice) => {
               setProtected(!sessionOnlyChoice)
-              setStep(origin === 'create' ? 'backup' : 'connections')
+              setStep(origin === 'create' ? 'backup' : 'profile')
             }}
           />
         )}
         {step === 'backup' && (
           <Backup
             protectedByPassphrase={protectedByPassphrase}
+            label={label('backup')}
+            onDone={() => setStep('profile')}
+          />
+        )}
+        {step === 'profile' && (
+          <ProfileStep
+            pubkey={signedInPubkey}
+            label={label('profile')}
             onDone={() => setStep('connections')}
           />
         )}
-        {step === 'connections' && <Connections onDone={finish} />}
+        {step === 'connections' && <Connections label={label('connections')} onDone={finish} />}
       </main>
     </div>
   )
@@ -215,6 +250,7 @@ function Choose({
             </div>
           </li>
         </ol>
+        <HashDemo />
       </aside>
     </div>
   )
@@ -326,10 +362,12 @@ function ImportKey({
 
 function Protect({
   pubkey,
+  label,
   onBack,
   onDone,
 }: {
   pubkey: string
+  label: string
   onBack: () => void
   onDone: (sessionOnly: boolean) => void
 }) {
@@ -365,7 +403,7 @@ function Protect({
     <form className="stack stack--lg" onSubmit={submit}>
       <input type="text" name="username" autoComplete="username" value={npub} readOnly hidden />
       <div className="stack">
-        <p className="step">Step 1 of 3</p>
+        <p className="step">{label}</p>
         <h1 className="title">Protect the key on this device</h1>
         <p className="secondary">
           The key is encrypted with a passphrase before it is saved in this browser. You enter the
@@ -440,9 +478,11 @@ function Protect({
 
 function Backup({
   protectedByPassphrase,
+  label,
   onDone,
 }: {
   protectedByPassphrase: boolean
+  label: string
   onDone: () => void
 }) {
   const [revealed, setRevealed] = useState(false)
@@ -456,7 +496,7 @@ function Backup({
   return (
     <div className="stack stack--lg">
       <div className="stack">
-        <p className="step">Step 2 of 3</p>
+        <p className="step">{label}</p>
         <h1 className="title">Back up your key</h1>
         <p className="secondary">
           Whoever holds this key can act as you. If it is lost and there is no backup, you cannot
@@ -538,13 +578,64 @@ function Backup({
   )
 }
 
+/* Profile ------------------------------------------------------------- */
+
+function ProfileStep({
+  pubkey,
+  label,
+  onDone,
+}: {
+  pubkey: string
+  label: string
+  onDone: () => void
+}) {
+  const [name, setName] = useState(profiles.get(pubkey)?.name ?? '')
+  const [picture, setPicture] = useState<string | undefined>(profiles.get(pubkey)?.picture)
+  const ready = cleanName(name).length > 0
+
+  const save = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!profiles.set(pubkey, { name, picture })) return
+    onDone()
+  }
+
+  return (
+    <form className="stack stack--lg" onSubmit={save}>
+      <div className="stack">
+        <p className="step">{label}</p>
+        <h1 className="title">What should we call you?</h1>
+        <p className="secondary">
+          Your name and photo identify this key on this device, for example on the sign-in screen
+          and in the sidebar. They are saved only in this browser.
+        </p>
+      </div>
+      <ProfileFields
+        name={name}
+        picture={picture}
+        onName={setName}
+        onPicture={setPicture}
+        autoFocus
+      />
+      <div className="profile-preview" aria-live="polite">
+        <Avatar name={name || '?'} picture={picture} size={36} />
+        <span>{ready ? `Signed in as ${cleanName(name)}` : 'Enter a name to continue'}</span>
+      </div>
+      <div className="inline inline--end">
+        <Button type="submit" variant="primary" disabled={!ready}>
+          Continue
+        </Button>
+      </div>
+    </form>
+  )
+}
+
 /* Connections --------------------------------------------------------- */
 
-function Connections({ onDone }: { onDone: () => void }) {
+function Connections({ label, onDone }: { label: string; onDone: () => void }) {
   return (
     <div className="stack stack--lg">
       <div className="stack">
-        <p className="step">Step 3 of 3</p>
+        <p className="step">{label}</p>
         <h1 className="title">Connect your storage and relays</h1>
         <p className="secondary">
           The storage server holds the files. Relays hold the index. Both can be changed later in
@@ -569,5 +660,83 @@ function Connections({ onDone }: { onDone: () => void }) {
         </Button>
       </div>
     </div>
+  )
+}
+
+/**
+ * Shows what "addressed by content" means with the real function the app uses: type anything
+ * and see its SHA-256. Characters that changed since the last keystroke flash.
+ */
+function HashDemo() {
+  const [text, setText] = useState('harbour-clip.webm')
+  const [hash, setHash] = useState('')
+  const [failed, setFailed] = useState(false)
+  const previous = useRef('')
+
+  useEffect(() => {
+    let live = true
+    sha256Native(new Blob([text]))
+      .then((h) => {
+        if (!live) return
+        previous.current = hash
+        setHash(h)
+        setFailed(false)
+      })
+      .catch(() => live && setFailed(true))
+    return () => {
+      live = false
+    }
+    // `hash` is read only to remember the previous value.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text])
+
+  return (
+    <section className="hashdemo" aria-labelledby="hashdemo-title">
+      <h2 className="how__title" id="hashdemo-title">
+        Try it: a file's address
+      </h2>
+      <label className="hashdemo__field">
+        <span className="sr-only">Text to fingerprint</span>
+        <input
+          className="input hashdemo__input"
+          value={text}
+          maxLength={120}
+          spellCheck={false}
+          autoComplete="off"
+          onChange={(e) => setText(e.target.value)}
+        />
+      </label>
+      <p className="hashdemo__hash" aria-live="off" data-testid="hashdemo-hash">
+        {failed
+          ? 'This browser cannot compute SHA-256 here.'
+          : Array.from({ length: 8 }, (_, g) => (
+              <span key={g} className="hashdemo__group">
+                {[...hash.slice(g * 8, g * 8 + 8)].map((c, k) => (
+                  <span
+                    key={`${g}-${k}-${hash}`}
+                    className={
+                      previous.current && previous.current[g * 8 + k] !== c
+                        ? 'hashdemo__changed'
+                        : undefined
+                    }
+                  >
+                    {c}
+                  </span>
+                ))}{' '}
+              </span>
+            ))}
+      </p>
+      <div className="hashdemo__note">
+        <p>
+          <strong>What is this?</strong> Every file you store is named by its SHA-256: a 64-digit
+          fingerprint of its contents. Type anything above and its fingerprint appears.
+        </p>
+        <p>
+          Change one character and every digit changes. Identical content always gets the identical
+          fingerprint, which is how Media Hub recognises a duplicate without comparing files. It is
+          worked out here, in your browser.
+        </p>
+      </div>
+    </section>
   )
 }

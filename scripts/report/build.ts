@@ -64,7 +64,7 @@ const meta = {
   guide: "Dr. Sudha M, Professor",
   date: process.env.REPORT_DATE ?? new Date().toLocaleDateString("en-GB"),
   repo: "https://github.com/GyroBullet/sovereign-media-hub",
-  header: "BACSE203 P — Final Review Report",
+  header: "BACSE203 P – Final Review Report",
 };
 
 // Result tables are generated from the benchmark CSV files so report numbers cannot drift from them.
@@ -276,6 +276,7 @@ function coverHtml(): string {
   <div class="school">${meta.school}</div>
   <div class="course">${meta.course}<br/>${meta.kind}</div>
   <h1 class="title">${meta.title}</h1>
+  <div class="rule"></div>
   <div class="subtitle">${meta.subtitle}</div>
   <div class="block"><b>Submitted by (Team Members):</b>
     <ul>${meta.team.map(([n, r], i) => `<li>Name ${i + 1}: ${n}, Roll Number: ${r}</li>`).join("")}</ul>
@@ -311,7 +312,7 @@ function pageHtml(pages: Record<string, number> | null): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"/><title>${meta.title} ${meta.subtitle}</title>
 <style>
 @page { size: Letter; margin: 0.9in 0.9in 0.9in 0.9in; }
-html { font-family: Calibri, Carlito, 'Segoe UI', sans-serif; font-size: 11pt; color: #111; }
+html { font-family: Calibri, Carlito, 'Segoe UI', sans-serif; font-size: 11pt; color: #000; }
 body { margin: 0; line-height: 1.38; }
 .cover { text-align: center; page-break-after: always; padding-top: 0.2in; }
 .cover .vit { font-size: 16pt; font-weight: bold; margin-bottom: 6pt; }
@@ -328,24 +329,26 @@ body { margin: 0; line-height: 1.38; }
 .toc-row .dots { flex: 1; border-bottom: 1px dotted #888; transform: translateY(-4pt); }
 .toc-row.d1 { font-weight: bold; margin-top: 7pt; }
 .toc-row.d2 { padding-left: 16pt; }
-h1 { font-size: 15pt; margin: 20pt 0 8pt; break-after: avoid; }
-h2 { font-size: 12.5pt; margin: 14pt 0 5pt; break-after: avoid; }
-h3 { font-size: 11pt; margin: 10pt 0 4pt; break-after: avoid; }
+h1 { font-size: 16pt; font-weight: 400; color: #2E74B5; margin: 20pt 0 8pt; padding-bottom: 2pt; border-bottom: 0.75pt solid #D9E2F3; break-after: avoid; }
+h2 { font-size: 13pt; font-weight: 400; color: #2E74B5; margin: 14pt 0 5pt; break-after: avoid; }
+h3 { font-size: 12pt; font-weight: 400; color: #1F3763; margin: 10pt 0 4pt; break-after: avoid; }
 h1.plain { margin-top: 0; }
+.cover .title { color: #000; font-weight: 700; }
+.cover .rule { width: 55%; height: 0; border-top: 1.5pt solid #2E74B5; margin: 0 auto 26pt; }
 p { margin: 0 0 7pt; text-align: justify; }
 li { margin: 2pt 0; }
-a { color: #1f4e79; text-decoration: none; word-break: break-all; }
-code { font-family: Consolas, 'Courier New', monospace; font-size: 9.2pt; background: #f1efeb; padding: 0 2pt; }
-pre { font-family: Consolas, 'Courier New', monospace; font-size: 8.6pt; background: #f6f4f0; border: 1px solid #ddd; padding: 6pt 8pt; white-space: pre-wrap; break-inside: avoid; }
+a { color: #0563C1; text-decoration: none; word-break: break-all; }
+code { font-family: Consolas, 'Courier New', monospace; font-size: 9.2pt; background: #EEF3FA; padding: 0 2pt; }
+pre { font-family: Consolas, 'Courier New', monospace; font-size: 8.6pt; background: #F5F8FC; border: 1px solid #D9E2F3; border-left: 3px solid #2E74B5; padding: 6pt 8pt; white-space: pre-wrap; break-inside: avoid; }
 pre code { background: none; padding: 0; font-size: inherit; }
 table { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt; font-size: 9.4pt; break-inside: auto; }
-th, td { border: 1px solid #999; padding: 3pt 5pt; text-align: left; vertical-align: top; }
-th { background: #ebe8e2; }
+th, td { border: 0.75pt solid #000; padding: 3pt 5pt; text-align: left; vertical-align: top; }
+th { background: #D9E2F3; font-weight: 700; }
 tr { break-inside: avoid; }
 figure { margin: 8pt 0 10pt; text-align: center; break-inside: avoid; }
-figure img { max-width: 100%; max-height: 3.7in; border: 1px solid #ddd; }
-figcaption { font-size: 9.2pt; font-style: italic; margin-top: 3pt; text-align: center; }
-blockquote { margin: 6pt 0 8pt 0; padding: 4pt 10pt; border-left: 3px solid #9a5a0c; background: #faf6ef; }
+figure img { max-width: 100%; max-height: 3.7in; border: 1px solid #D9E2F3; }
+figcaption { font-size: 9.2pt; font-style: italic; color: #44546A; margin-top: 3pt; text-align: center; }
+blockquote { margin: 6pt 0 8pt 0; padding: 4pt 10pt; border-left: 3px solid #2E74B5; background: #EEF3FA; }
 blockquote p { margin: 0; }
 hr { border: 0; page-break-after: always; }
 </style></head><body>${coverHtml()}${tocHtml(pages)}${body}</body></html>`;
@@ -364,8 +367,8 @@ async function renderPdf(pages: Record<string, number> | null, out: string) {
     format: "Letter",
     printBackground: true,
     displayHeaderFooter: true,
-    headerTemplate: `<div style="width:100%;font-size:8px;font-family:Calibri,Arial;text-align:right;padding-right:0.9in;color:#444">${meta.header}</div>`,
-    footerTemplate: `<div style="width:100%;font-size:9px;font-family:Calibri,Arial;text-align:center;color:#444">Page <span class="pageNumber"></span></div>`,
+    headerTemplate: `<div style="width:100%;font-family:Calibri,Arial;padding-left:0.9in;color:#000"><div style="font-size:9px">${meta.header}</div><div style="font-size:9px">Page <span class="pageNumber"></span></div></div>`,
+    footerTemplate: `<div></div>`,
     margin: { top: "0.9in", bottom: "0.9in", left: "0.9in", right: "0.9in" },
   });
   await browser.close();
@@ -424,7 +427,7 @@ function inline(
             text: (t as Tokens.Codespan).text,
             font: "Consolas",
             size: 19,
-            shading: { type: ShadingType.CLEAR, fill: "F1EFEB" },
+            shading: { type: ShadingType.CLEAR, fill: "EEF3FA" },
             ...style,
           }),
         );
@@ -482,7 +485,7 @@ function decode(s: string): string {
     .replace(/&#39;/g, "'");
 }
 
-const cellBorder = { style: BorderStyle.SINGLE, size: 4, color: "999999" };
+const cellBorder = { style: BorderStyle.SINGLE, size: 4, color: "000000" };
 const borders = {
   top: cellBorder,
   bottom: cellBorder,
@@ -606,7 +609,7 @@ function docxBlocks(toks: Token[], listLevel = 0): (Paragraph | Table)[] {
                   width: { size: Math.floor(9360 / cols), type: WidthType.DXA },
                   margins: { top: 40, bottom: 40, left: 80, right: 80 },
                   shading: head
-                    ? { type: ShadingType.CLEAR, fill: "EBE8E2" }
+                    ? { type: ShadingType.CLEAR, fill: "D9E2F3" }
                     : undefined,
                   children: [
                     new Paragraph({
@@ -638,7 +641,7 @@ function docxBlocks(toks: Token[], listLevel = 0): (Paragraph | Table)[] {
         for (const line of c.text.split("\n")) {
           out.push(
             new Paragraph({
-              shading: { type: ShadingType.CLEAR, fill: "F6F4F0" },
+              shading: { type: ShadingType.CLEAR, fill: "F5F8FC" },
               spacing: { after: 0 },
               children: [
                 new TextRun({ text: line || " ", font: "Consolas", size: 17 }),
@@ -814,7 +817,7 @@ async function buildDocx(out: string) {
           basedOn: "Normal",
           next: "Normal",
           quickFormat: true,
-          run: { size: 30, bold: true, font: FONT },
+          run: { size: 32, color: "2E74B5", font: FONT },
           paragraph: { spacing: { before: 360, after: 120 }, outlineLevel: 0 },
         },
         {
@@ -823,7 +826,7 @@ async function buildDocx(out: string) {
           basedOn: "Normal",
           next: "Normal",
           quickFormat: true,
-          run: { size: 25, bold: true, font: FONT },
+          run: { size: 26, color: "2E74B5", font: FONT },
           paragraph: { spacing: { before: 240, after: 100 }, outlineLevel: 1 },
         },
         {
@@ -832,7 +835,7 @@ async function buildDocx(out: string) {
           basedOn: "Normal",
           next: "Normal",
           quickFormat: true,
-          run: { size: 22, bold: true, font: FONT },
+          run: { size: 24, color: "1F3763", font: FONT },
           paragraph: { spacing: { before: 200, after: 80 }, outlineLevel: 2 },
         },
       ],
@@ -877,19 +880,14 @@ async function buildDocx(out: string) {
           default: new Header({
             children: [
               new Paragraph({
-                alignment: AlignmentType.RIGHT,
+                alignment: AlignmentType.LEFT,
+                spacing: { after: 0 },
                 children: [
-                  new TextRun({ text: meta.header, size: 16, font: FONT }),
+                  new TextRun({ text: meta.header, size: 18, font: FONT }),
                 ],
               }),
-            ],
-          }),
-        },
-        footers: {
-          default: new Footer({
-            children: [
               new Paragraph({
-                alignment: AlignmentType.CENTER,
+                alignment: AlignmentType.LEFT,
                 children: [
                   new TextRun({ text: "Page ", size: 18, font: FONT }),
                   new TextRun({
@@ -902,6 +900,7 @@ async function buildDocx(out: string) {
             ],
           }),
         },
+        footers: { default: new Footer({ children: [new Paragraph({ children: [] })] }) },
         children: [...cover, ...body],
       },
     ],

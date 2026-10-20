@@ -1,11 +1,13 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import type { Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
+import { makePng } from '../tools/png'
 import { startRelay, type DevRelay } from '../tools/dev-relay/relay.mjs'
 import { startBlossom, type RunningServer } from '../tools/blossom-server'
 
 export const PASSPHRASE = 'correct horse battery staple'
+export const PROFILE_NAME = 'Kushagra Bansal'
 export const SHOTS = path.resolve(import.meta.dirname, '../../docs/screenshots')
 
 export interface Stack {
@@ -76,7 +78,7 @@ export async function makeJpegs(
       files.push(
         new File([blob], name, {
           type: 'image/jpeg',
-          lastModified: 1_700_000_000_000 + seed * 86_400_000,
+          lastModified: 1_790_847_000_000 + seed * 86_400_000,
         }),
       )
     }
@@ -94,7 +96,7 @@ export async function makeWebm(page: Page, name: string): Promise<void> {
       const bytes = Uint8Array.from(atob(data!), (c) => c.charCodeAt(0))
       const file = new File([bytes], fileName!, {
         type: 'video/webm',
-        lastModified: 1_700_500_000_000,
+        lastModified: 1_792_402_200_000,
       })
       const w = window as unknown as { __files?: File[] }
       w.__files = [...(w.__files ?? []), file]
@@ -125,8 +127,22 @@ export async function createIdentity(page: Page, stack: Stack): Promise<void> {
   await page.getByRole('heading', { name: 'Back up your key' }).waitFor({ timeout: 30_000 })
   await page.getByLabel(/I have stored a backup/).check()
   await page.getByRole('button', { name: 'Continue' }).click()
+  await fillProfile(page)
   await configureConnections(page, stack)
   await page.getByRole('button', { name: 'Open library' }).click()
+}
+
+/** The "What should we call you?" step: a name and a photo. Submits unless told not to. */
+export async function fillProfile(page: Page, opts: { submit?: boolean } = {}): Promise<void> {
+  await page.getByRole('heading', { name: 'What should we call you?' }).waitFor()
+  await page.getByLabel('Your name').fill(PROFILE_NAME)
+  await page.locator('input[aria-label="Choose a profile photo"]').setInputFiles({
+    name: 'profile.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(makePng(11, 480, 40)),
+  })
+  await expect(page.locator('.profile-fields__photo .avatar img')).toBeVisible()
+  if (opts.submit !== false) await page.getByRole('button', { name: 'Continue' }).click()
 }
 
 export async function configureConnections(page: Page, stack: Stack): Promise<void> {

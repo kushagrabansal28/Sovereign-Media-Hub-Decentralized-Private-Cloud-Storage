@@ -1,0 +1,106 @@
+/* Profile: the name and photo shown for an identity on this device. Loaded after identity.css. */
+.avatar {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--accent-subtle);
+  color: var(--accent-text);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+  box-shadow: 0 0 0 1px var(--border-strong);
+  user-select: none;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.profile-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.profile-fields__photo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.profile-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
+}
+.profile-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.profile-row__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  animation: rise 420ms var(--ease) both;
+}
+.who__text {
+  display: flex;
+  flex-direction: column;
+}
+.who__hello {
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.who__name {
+  font-size: var(--text-lg);
+  letter-spacing: -0.01em;
+}
+.nav__user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-1);
+  min-width: 0;
+}
+.nav__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--weight-medium);
+}
+@media (max-width: 1100px) {
+  .nav__user {
+    justify-content: center;
+  }
+  .nav__name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+.hashdemo__note p + p {
+  margin-top: var(--space-2);
+}
+.hashdemo__note strong {
+  color: var(--text-secondary);
+}

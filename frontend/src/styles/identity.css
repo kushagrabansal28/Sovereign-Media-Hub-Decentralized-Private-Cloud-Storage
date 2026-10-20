@@ -1,0 +1,470 @@
+/*
+ * Identity and motion: the logo, the cursor, the vault strip, the ledger table, the hash demo
+ * and the transitions between screens. Loaded after app.css.
+ */
+
+/* Logo ------------------------------------------------------------------- */
+.logo--draw .logo__body {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: logo-draw 900ms 120ms var(--ease) forwards;
+}
+.logo--draw .logo__top {
+  opacity: 0;
+  animation: logo-fill 420ms 650ms var(--ease) forwards;
+}
+@keyframes logo-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes logo-fill {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Cursor ----------------------------------------------------------------- */
+html {
+  cursor:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M4.5 3.5l14 7-6.2 1.9-2.6 6z' fill='%23e0a458' stroke='%23121110' stroke-width='1.4' stroke-linejoin='round'/></svg>")
+      4 3,
+    auto;
+}
+a[href],
+button:not(:disabled),
+[role='button'],
+[role='menuitem'],
+[role='option'],
+summary,
+select,
+.choice:not(:disabled),
+.tile__main {
+  cursor:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><circle cx='12' cy='12' r='4.5' fill='%23e0a458' stroke='%23121110' stroke-width='1.6'/></svg>")
+      12 12,
+    pointer;
+}
+
+.cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms var(--ease);
+  will-change: transform;
+}
+.cursor[data-shown='true'] {
+  opacity: 1;
+}
+.cursor__ring {
+  position: absolute;
+  left: -15px;
+  top: -15px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  opacity: 0.5;
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+  color: var(--text-on-accent);
+  transition:
+    width 220ms var(--ease),
+    height 220ms var(--ease),
+    left 220ms var(--ease),
+    top 220ms var(--ease),
+    background 220ms var(--ease),
+    opacity 220ms var(--ease),
+    border-radius 220ms var(--ease),
+    transform 140ms var(--ease);
+}
+.cursor[data-mode='link'] .cursor__ring {
+  left: -22px;
+  top: -22px;
+  width: 44px;
+  height: 44px;
+  background: var(--accent-subtle);
+  opacity: 0.9;
+}
+.cursor[data-mode='open'] .cursor__ring,
+.cursor[data-mode='play'] .cursor__ring {
+  left: -30px;
+  top: -30px;
+  width: 60px;
+  height: 60px;
+  background: var(--accent);
+  opacity: 0.94;
+}
+.cursor[data-mode='open'] .cursor__ring::after {
+  content: 'Open';
+}
+.cursor[data-mode='play'] .cursor__ring::after {
+  content: 'Play';
+}
+.cursor[data-mode='text'] .cursor__ring {
+  left: -1px;
+  top: -11px;
+  width: 2px;
+  height: 22px;
+  border: 0;
+  border-radius: 1px;
+  background: var(--accent);
+  opacity: 0.8;
+}
+.cursor[data-down='true'] .cursor__ring {
+  transform: scale(0.82);
+}
+@media (pointer: coarse) {
+  .cursor {
+    display: none;
+  }
+}
+
+/* Screens settle in instead of switching --------------------------------- */
+.welcome-grid .choices li,
+.how__list li,
+.hashdemo {
+  animation: rise 520ms var(--ease) both;
+}
+.welcome-grid .choices li:nth-child(2),
+.how__list li:nth-child(2) {
+  animation-delay: 70ms;
+}
+.welcome-grid .choices li:nth-child(3),
+.how__list li:nth-child(3) {
+  animation-delay: 140ms;
+}
+.hashdemo {
+  animation-delay: 220ms;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Ledger paper behind the first-run screens: a faint dot grid that fades out. */
+.welcome {
+  position: relative;
+  isolation: isolate;
+}
+.welcome::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(circle at 1px 1px, var(--border-strong) 1px, transparent 0);
+  background-size: 24px 24px;
+  opacity: 0.45;
+  mask-image: linear-gradient(to bottom, #000 0, transparent 75%);
+  pointer-events: none;
+}
+
+/* Shared-element transition from a tile to the viewer -------------------- */
+.viewer__preview {
+  view-transition-name: hero;
+}
+::view-transition-group(root) {
+  animation-duration: 200ms;
+}
+::view-transition-group(hero) {
+  animation-duration: 340ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+::view-transition-old(hero),
+::view-transition-new(hero) {
+  mix-blend-mode: normal;
+}
+@supports (view-transition-name: none) {
+  .viewer {
+    animation: none;
+  }
+}
+
+.tile__main:hover img[data-loaded] {
+  transform: scale(1.035);
+}
+.tile[data-selected] .tile__main:hover img {
+  transform: scale(0.94);
+}
+
+/* Hash demo -------------------------------------------------------------- */
+.hashdemo {
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+}
+.hashdemo__input {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.hashdemo__hash {
+  display: grid;
+  grid-template-columns: repeat(4, max-content);
+  justify-content: space-between;
+  row-gap: 2px;
+  margin: var(--space-3) 0 var(--space-2);
+  padding: 10px 12px;
+  min-height: 5.6em;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.75;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+}
+.hashdemo__changed {
+  color: var(--accent-text);
+  animation: hash-flash 700ms var(--ease) both;
+}
+@keyframes hash-flash {
+  from {
+    background: var(--accent-subtle);
+  }
+  to {
+    background: transparent;
+  }
+}
+.hashdemo__note {
+  max-width: 52ch;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+/* Vault strip ------------------------------------------------------------ */
+.segmented--icons button {
+  padding: 0 var(--space-2);
+  display: inline-flex;
+  align-items: center;
+}
+.vault {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+  animation: rise 420ms var(--ease) both;
+}
+.vault__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3) var(--space-4);
+  min-width: 0;
+}
+.vault__cell + .vault__cell {
+  border-left: 1px solid var(--border);
+}
+.vault__label {
+  font-size: 0.6875rem;
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.vault__value {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.vault__of {
+  font-size: var(--text-md);
+  font-weight: var(--weight-regular);
+  color: var(--text-muted);
+}
+.vault__note {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.vault__bar {
+  display: flex;
+  height: 4px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--surface-sunken);
+}
+.vault__bar-photos {
+  background: var(--accent);
+  transition: width 600ms var(--ease);
+}
+.vault__bar-videos {
+  background: var(--info);
+  transition: width 600ms var(--ease);
+}
+.vault__cell--saved .vault__value {
+  color: var(--success);
+}
+@media (max-width: 720px) {
+  .vault {
+    grid-template-columns: 1fr 1fr;
+  }
+  .vault__cell + .vault__cell {
+    border-left: 0;
+  }
+  .vault__cell:nth-child(even) {
+    border-left: 1px solid var(--border);
+  }
+  .vault__cell:nth-child(n + 3) {
+    border-top: 1px solid var(--border);
+  }
+}
+
+/* Ledger ----------------------------------------------------------------- */
+.ledger-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow-x: auto;
+  animation: rise 360ms var(--ease) both;
+}
+.ledger {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.ledger th {
+  padding: var(--space-2) var(--space-4);
+  text-align: left;
+  font-size: 0.6875rem;
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--border);
+}
+.ledger td {
+  padding: 6px var(--space-4);
+  border-top: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--text-secondary);
+}
+.ledger tbody tr:first-child td {
+  border-top: 0;
+}
+.ledger tbody tr {
+  transition: background var(--duration-fast) var(--ease);
+}
+.ledger tbody tr:hover {
+  background: var(--hover);
+}
+.ledger .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ledger code {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.ledger__open {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  text-align: left;
+}
+.ledger__thumb {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+}
+.ledger__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ledger__name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-weight: var(--weight-medium);
+}
+.ledger__type {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+  color: var(--text-muted);
+}
+.ledger__hash {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.ledger__hash code {
+  color: var(--accent-text);
+}
+.ledger__hash-rest {
+  color: var(--text-muted);
+}
+.ledger__copy {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+}
+.ledger__copy:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.ledger__more {
+  display: block;
+  width: 100%;
+  padding: var(--space-3);
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+.ledger__more:hover {
+  color: var(--text);
+}
+@media (max-width: 1100px) {
+  .hide-medium {
+    display: none;
+  }
+  .ledger__hash-rest {
+    display: none;
+  }
+}
+
+.ledger__size-inline {
+  display: none;
+}
+@media (max-width: 720px) {
+  .ledger__size-inline {
+    display: inline;
+  }
+  .ledger td,
+  .ledger th {
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+}
