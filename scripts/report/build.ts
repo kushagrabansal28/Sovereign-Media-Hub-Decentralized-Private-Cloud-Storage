@@ -50,7 +50,7 @@ const meta = {
   institution: "Vellore Institute of Technology",
   status: "(Deemed to be University under Section 3 of UGC Act, 1956)",
   school: "SCHOOL OF COMPUTER SCIENCE ENGINEERING AND INFORMATION SYSTEMS",
-  course: "BACSE203 P — Computer Network Lab",
+  course: "BACSE203 P – Computer Network Lab",
   kind: "Final Review Report",
   title: "Sovereign Media Hub:",
   subtitle:
@@ -380,9 +380,15 @@ import json, sys, re, pypdf
 r = pypdf.PdfReader(sys.argv[1])
 heads = json.loads(sys.argv[2])
 found = {}
+def clean(p):
+    return re.sub(r"\\s+", " ", p.extract_text() or "")
+# The cover is page 1; the contents may run over several pages, each listing many headings.
+start = 1
+while start < len(r.pages) and sum(1 for h in heads if h["text"] in clean(r.pages[start])) >= 8:
+    start += 1
 for i, p in enumerate(r.pages):
-    if i < 2: continue  # cover and table of contents
-    text = re.sub(r"\\s+", " ", p.extract_text() or "")
+    if i < start: continue
+    text = clean(p)
     for h in heads:
         if h["id"] not in found and h["text"] in text:
             found[h["id"]] = i + 1
