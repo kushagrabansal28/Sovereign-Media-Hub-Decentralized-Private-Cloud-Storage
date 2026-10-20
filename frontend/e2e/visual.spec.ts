@@ -107,6 +107,36 @@ test('the address demo shows the real SHA-256 of what is typed', async ({ browse
   await ctx.close()
 })
 
+test('a new key walks through every setup step even if setup was finished before', async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext({ viewport: VIEWPORTS.laptop })
+  // A browser that finished setup earlier and then removed its identity.
+  await ctx.addInitScript(() => {
+    if (!localStorage.getItem('smh.settings.v1'))
+      localStorage.setItem(
+        'smh.settings.v1',
+        JSON.stringify({
+          serverUrl: 'http://localhost:8787',
+          relays: ['ws://localhost:7777'],
+          theme: 'system',
+          confirmed: true,
+        }),
+      )
+  })
+  const p = await ctx.newPage()
+  await p.goto('/')
+  await p.getByRole('button', { name: /Create a new identity/ }).click()
+  await p.getByLabel('Passphrase', { exact: true }).fill(PASSPHRASE)
+  await p.getByLabel('Repeat passphrase').fill(PASSPHRASE)
+  await p.getByRole('button', { name: 'Continue' }).click()
+  await p.getByRole('heading', { name: 'Back up your key' }).waitFor({ timeout: 30_000 })
+  await p.getByLabel(/I have stored a backup/).check()
+  await p.getByRole('button', { name: 'Continue' }).click()
+  await p.getByRole('heading', { name: 'What should we call you?' }).waitFor()
+  await ctx.close()
+})
+
 test('identity setup steps', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: VIEWPORTS.laptop })
   const p = await ctx.newPage()

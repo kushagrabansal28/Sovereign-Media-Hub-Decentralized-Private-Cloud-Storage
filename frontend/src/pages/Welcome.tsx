@@ -61,6 +61,15 @@ export default function Welcome() {
   const [pubkey, setPubkey] = useState('')
   const [protectedByPassphrase, setProtected] = useState(false)
 
+  // Starting again with no identity (a fresh browser, or after "Use a different identity") must
+  // walk through every step, even if setup was finished in this browser before. Otherwise the
+  // saved "confirmed" flag would send a new key straight to the library.
+  useEffect(() => {
+    if (identityState.phase === 'none') settings.update({ confirmed: false })
+    // Runs once, when the first-run screen opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const plan = PLANS[origin]
   const label = (s: Step) => `Step ${plan.indexOf(s) + 1} of ${plan.length}`
   const signedInPubkey = identityState.phase === 'unlocked' ? identityState.pubkey : ''
